@@ -30,6 +30,8 @@ let isDrawing = false;
 let currentTool = 'draw';
 let currentColor = '#000000';
 let brushSize = 5;
+let startPoint = null;
+let previewImageData = null;
 
 // Get UI elements
 const colorPicker = document.getElementById('colorPicker');
@@ -37,9 +39,17 @@ const brushSizeSlider = document.getElementById('brushSize');
 const brushSizeValue = document.getElementById('brushSizeValue');
 const drawBtn = document.getElementById('drawBtn');
 const eraseBtn = document.getElementById('eraseBtn');
+const paintBtn = document.getElementById('paintBtn');
+const rectBtn = document.getElementById('rectBtn');
+const circleBtn = document.getElementById('circleBtn');
+const lineBtn = document.getElementById('lineBtn');
+const triangleBtn = document.getElementById('triangleBtn');
 const clearBtn = document.getElementById('clearBtn');
 const saveBtn = document.getElementById('saveBtn');
 const colorSwatches = document.querySelectorAll('.color-swatch');
+
+// All tool buttons
+const allToolButtons = [drawBtn, eraseBtn, paintBtn, rectBtn, circleBtn, lineBtn, triangleBtn];
 
 // Update brush size display
 brushSizeSlider.addEventListener('input', (e) => {
@@ -73,19 +83,59 @@ function updateActiveColorSwatch(color) {
     });
 }
 
+// Function to deactivate all tool buttons
+function deactivateAllTools() {
+    allToolButtons.forEach(btn => btn.classList.remove('active'));
+}
+
 // Tool buttons
 drawBtn.addEventListener('click', () => {
     currentTool = 'draw';
+    deactivateAllTools();
     drawBtn.classList.add('active');
-    eraseBtn.classList.remove('active');
     canvas.style.cursor = 'crosshair';
 });
 
 eraseBtn.addEventListener('click', () => {
     currentTool = 'erase';
+    deactivateAllTools();
     eraseBtn.classList.add('active');
-    drawBtn.classList.remove('active');
     canvas.style.cursor = 'grab';
+});
+
+paintBtn.addEventListener('click', () => {
+    currentTool = 'paint';
+    deactivateAllTools();
+    paintBtn.classList.add('active');
+    canvas.style.cursor = 'crosshair';
+});
+
+rectBtn.addEventListener('click', () => {
+    currentTool = 'rectangle';
+    deactivateAllTools();
+    rectBtn.classList.add('active');
+    canvas.style.cursor = 'crosshair';
+});
+
+circleBtn.addEventListener('click', () => {
+    currentTool = 'circle';
+    deactivateAllTools();
+    circleBtn.classList.add('active');
+    canvas.style.cursor = 'crosshair';
+});
+
+lineBtn.addEventListener('click', () => {
+    currentTool = 'line';
+    deactivateAllTools();
+    lineBtn.classList.add('active');
+    canvas.style.cursor = 'crosshair';
+});
+
+triangleBtn.addEventListener('click', () => {
+    currentTool = 'triangle';
+    deactivateAllTools();
+    triangleBtn.classList.add('active');
+    canvas.style.cursor = 'crosshair';
 });
 
 // Clear canvas
@@ -103,8 +153,99 @@ saveBtn.addEventListener('click', () => {
     link.click();
 });
 
+// Save canvas state for preview
+function saveCanvasState() {
+    previewImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+// Restore canvas state
+function restoreCanvasState() {
+    if (previewImageData) {
+        ctx.putImageData(previewImageData, 0, 0);
+    }
+}
+
+// Flood fill algorithm
+function floodFill(x, y, fillColor) {
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    // Convert fill color to RGBA
+    const fillR = parseInt(fillColor.slice(1, 3), 16);
+    const fillG = parseInt(fillColor.slice(3, 5), 16);
+    const fillB = parseInt(fillColor.slice(5, 7), 16);
+    const fillA = 255;
+    
+    // Get target color at starting point
+    const startIdx = (Math.floor(y) * width + Math.floor(x)) * 4;
+    const targetR = data[startIdx];
+    const targetG = data[startIdx + 1];
+    const targetB = data[startIdx + 2];
+    const targetA = data[startIdx + 3];
+    
+    // If target color matches fill color, return
+    if (targetR === fillR && targetG === fillG && targetB === fillB && targetA === fillA) {
+        return;
+    }
+    
+    // Stack-based flood fill
+    const stack = [[Math.floor(x), Math.floor(y)]];
+    const visited = new Set();
+    
+    while (stack.length > 0) {
+        const [px, py] = stack.pop();
+        const key = `${px},${py}`;
+        
+        if (visited.has(key) || px < 0 || px >= width || py < 0 || py >= height) {
+            continue;
+        }
+        
+        const idx = (py * width + px) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const a = data[idx + 3];
+        
+        // Check if pixel matches target color (with tolerance for anti-aliasing)
+        if (Math.abs(r - targetR) < 10 && Math.abs(g - targetG) < 10 && 
+            Math.abs(b - targetB) < 10 && Math.abs(a - targetA) < 10) {
+            visited.add(key);
+            
+            // Fill the pixel
+            data[idx] = fillR;
+            data[idx + 1] = fillG;
+            data[idx + 2] = fillB;
+            data[idx + 3] = fillA;
+            
+            // Add neighbors to stack
+            stack.push([px + 1, py]);
+            stack.push([px - 1, py]);
+            stack.push([px, py + 1]);
+            stack.push([px, py - 1]);
+        }
+    }
+    
+    ctx.putImageData(imageData, 0, 0);
+}
+
 // Drawing functions
 function startDrawing(e) {
+    if (currentTool === 'paint') {
+        const point = getPoint(e);
+        floodFill(point.x, point.y, currentColor);
+        return;
+    }
+    
+    if (['rectangle', 'circle', 'line', 'triangle'].includes(currentTool)) {
+        isDrawing = true;
+        startPoint = getPoint(e);
+        saveCanvasState();
+        return;
+    }
+    
+    // Free draw or erase
     isDrawing = true;
     const point = getPoint(e);
     ctx.beginPath();
@@ -114,12 +255,53 @@ function startDrawing(e) {
 function draw(e) {
     if (!isDrawing) return;
     
+    // Handle shape tools
+    if (startPoint && ['rectangle', 'circle', 'line', 'triangle'].includes(currentTool)) {
+        const currentPoint = getPoint(e);
+        
+        // Restore canvas and draw preview
+        restoreCanvasState();
+        
+        ctx.strokeStyle = currentColor;
+        ctx.fillStyle = currentColor;
+        ctx.lineWidth = brushSize;
+        ctx.globalCompositeOperation = 'source-over';
+        
+        if (currentTool === 'rectangle') {
+            const width = currentPoint.x - startPoint.x;
+            const height = currentPoint.y - startPoint.y;
+            ctx.strokeRect(startPoint.x, startPoint.y, width, height);
+        } else if (currentTool === 'circle') {
+            const radius = Math.sqrt(
+                Math.pow(currentPoint.x - startPoint.x, 2) + 
+                Math.pow(currentPoint.y - startPoint.y, 2)
+            );
+            ctx.beginPath();
+            ctx.arc(startPoint.x, startPoint.y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+        } else if (currentTool === 'line') {
+            ctx.beginPath();
+            ctx.moveTo(startPoint.x, startPoint.y);
+            ctx.lineTo(currentPoint.x, currentPoint.y);
+            ctx.stroke();
+        } else if (currentTool === 'triangle') {
+            ctx.beginPath();
+            ctx.moveTo(startPoint.x, startPoint.y);
+            ctx.lineTo(currentPoint.x, currentPoint.y);
+            ctx.lineTo(startPoint.x * 2 - currentPoint.x, currentPoint.y);
+            ctx.closePath();
+            ctx.stroke();
+        }
+        return;
+    }
+    
+    // Handle free draw or erase
     const point = getPoint(e);
     
     if (currentTool === 'draw') {
         ctx.globalCompositeOperation = 'source-over';
         ctx.strokeStyle = currentColor;
-    } else {
+    } else if (currentTool === 'erase') {
         ctx.globalCompositeOperation = 'destination-out';
     }
     
@@ -129,7 +311,13 @@ function draw(e) {
 }
 
 function stopDrawing() {
-    if (isDrawing) {
+    if (isDrawing && startPoint) {
+        // Finalize shape drawing
+        previewImageData = null;
+        startPoint = null;
+        isDrawing = false;
+    } else if (isDrawing) {
+        // Free draw or erase
         isDrawing = false;
         ctx.beginPath();
     }
@@ -168,7 +356,11 @@ canvas.addEventListener('touchstart', (e) => {
 
 canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
-    draw(e);
+    if (['rectangle', 'circle', 'line', 'triangle'].includes(currentTool)) {
+        draw(e);
+    } else {
+        draw(e);
+    }
 });
 
 canvas.addEventListener('touchend', (e) => {
@@ -188,4 +380,3 @@ canvas.addEventListener('contextmenu', (e) => {
 
 // Initialize with black color active
 updateActiveColorSwatch(currentColor);
-
