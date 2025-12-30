@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unicorn vs Mermaid</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #gameContainer {
+            position: relative;
+        }
+
+        #gameCanvas {
+            border: 3px solid #333;
+            display: block;
+            background-color: #87CEEB; /* Default sky blue */
+        }
+
+        #menu {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            margin: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #scoreBoard {
+            margin-top: 20px;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        #gameOver h2 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Unicorn vs Mermaid</h1>
+    
+    <div id="menu">
+        <button id="playUnicorn">Play as Unicorn</button>
+        <button id="playMermaid">Play as Mermaid</button>
+    </div>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="gameOver">
+            <h2>Game Over!</h2>
+            <p id="finalScore"></p>
+            <button onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <div id="scoreBoard">
+        <div>Your Score: <span id="playerScore">0</span></div>
+    </div>
+
+    <script>
+        // Get canvas and context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game state variables
+        let gameState = 'menu'; // 'menu', 'playing', 'gameOver'
+        let playerType = null; // 'unicorn' or 'mermaid'
+        let playerScore = 0;
+        let gameSpeed = 2; // How fast the game scrolls
+
+        // Player object
+        const player = {
+            x: 100, // Fixed horizontal position
+            y: 300, // Vertical position (changes when jumping)
+            width: 60,
+            height: 60,
+            velocityY: 0, // Vertical speed
+            gravity: 0.5, // Gravity strength
+            jumpPower: -12, // Jump strength (negative = up)
+            onGround: false
+        };
+
+        // Arrays to store collectibles and enemies
+        let collectibles = [];
+        let enemies = [];
+        let confetti = []; // Array to store confetti particles
+        let rainbows = []; // Array to store rainbow effects
+        let clouds = []; // Array to store cloud effects
+
+        // Game settings based on player type
+        const gameSettings = {
+            unicorn: {
+                bgColor: '#87CEEB', // Sky blue
+                playerColor: '#FFFFFF', // White
+                collectibleColor: '#FFD700', // Yellow (stars)
+                enemyColor: '#FF0000', // Red
+                collectibleType: 'star'
+            },
+            mermaid: {
+                bgColor: '#1E90FF', // Ocean blue
+                playerColor: '#0000FF', // Blue
+                collectibleColor: '#FFFFFF', // White (pearls)
+                enemyColor: '#800080', // Purple
+                collectibleType: 'pearl'
+            }
+        };
+
+        // Initialize game when button is clicked
+        document.getElementById('playUnicorn').addEventListener('click', () => {
+            startGame('unicorn');
+        });
+
+        document.getElementById('playMermaid').addEventListener('click', () => {
+            startGame('mermaid');
+        });
+
+        // Start the game
+        function startGame(type) {
+            playerType = type;
+            gameState = 'playing';
+            playerScore = 0;
+            collectibles = [];
+            enemies = [];
+            confetti = []; // Clear confetti when starting new game
+            rainbows = []; // Clear rainbows when starting new game
+            clouds = []; // Clear clouds when starting new game
+            player.y = canvas.height / 2;
+            player.velocityY = 0;
+            
+            // Hide menu buttons
+            document.getElementById('menu').style.display = 'none';
+            
+            // Start game loop
+            gameLoop();
+        }
+
+        // Handle click/tap to jump
+        canvas.addEventListener('click', () => {
+            if (gameState === 'playing') {
+                player.velocityY = player.jumpPower;
+            }
+        });
+
+        // Handle keyboard spacebar for jump
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && gameState === 'playing') {
+                e.preventDefault();
+                player.velocityY = player.jumpPower;
+            }
+        });
+
+        // Create a new collectible
+        function createCollectible() {
+            collectibles.push({
+                x: canvas.width + 50,
+                y: Math.random() * (canvas.height - 100) + 50,
+                radius: 15,
+                collected: false
+            });
+        }
+
+        // Create a new enemy
+        function createEnemy() {
+            enemies.push({
+                x: canvas.width + 50,
+                y: Math.random() * (canvas.height - 100) + 50,
+                width: 40,
+                height: 40
+            });
+        }
+
+        // Create confetti particles at a specific position
+        function createConfetti(x, y) {
+            const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
+            const particleCount = 15; // Number of confetti pieces
+            
+            for (let i = 0; i < particleCount; i++) {
+                confetti.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 6, // Random horizontal velocity
+                    vy: (Math.random() - 0.5) * 6 - 2, // Random vertical velocity (upward bias)
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    size: Math.random() * 4 + 3, // Random size between 3-7
+                    rotation: Math.random() * Math.PI * 2, // Random rotation
+                    rotationSpeed: (Math.random() - 0.5) * 0.2, // Rotation speed
+                    gravity: 0.15 // Gravity effect
+                });
+            }
+        }
+
+        // Create a rainbow effect
+        function createRainbow() {
+            rainbows.push({
+                x: canvas.width + 100, // Start off screen to the right
+                y: Math.random() * (canvas.height - 200) + 100, // Random vertical position
+                width: 200, // Width of rainbow
+                height: 80, // Height of rainbow
+                speed: 1.5, // Movement speed
+                opacity: 0.7 // Transparency
+            });
+        }
+
+        // Create a cloud
+        function createCloud() {
+            const size = Math.random() * 40 + 60; // Random size between 60-100
+            clouds.push({
+                x: canvas.width + 50, // Start off screen to the right
+                y: Math.random() * (canvas.height - 150) + 50, // Random vertical position
+                size: size, // Cloud size
+                speed: Math.random() * 0.5 + 0.5, // Random slow speed (0.5-1.0)
+                opacity: Math.random() * 0.3 + 0.5 // Random opacity (0.5-0.8)
+            });
+        }
+
+        // Check collision between two rectangles
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        // Check collision between rectangle and circle
+        function checkCollisionCircleRect(circle, rect) {
+            const closestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.width));
+            const closestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.height));
+            const distanceX = circle.x - closestX;
+            const distanceY = circle.y - closestY;
+            return (distanceX * distanceX + distanceY * distanceY) < (circle.radius * circle.radius);
+        }
+
+        // Update game logic
+        function update() {
+            if (gameState !== 'playing') return;
+
+            // Apply gravity to player
+            player.velocityY += player.gravity;
+            player.y += player.velocityY;
+
+            // Keep player on screen (top and bottom boundaries)
+            if (player.y < 0) {
+                player.y = 0;
+                player.velocityY = 0;
+            }
+            if (player.y + player.height > canvas.height) {
+                player.y = canvas.height - player.height;
+                player.velocityY = 0;
+                player.onGround = true;
+            } else {
+                player.onGround = false;
+            }
+
+            // Move collectibles from right to left
+            for (let i = collectibles.length - 1; i >= 0; i--) {
+                collectibles[i].x -= gameSpeed;
+
+                // Check if player collected it
+                if (!collectibles[i].collected && 
+                    checkCollisionCircleRect(collectibles[i], player)) {
+                    collectibles[i].collected = true;
+                    playerScore += 10;
+                    // Create confetti at collection point
+                    createConfetti(collectibles[i].x, collectibles[i].y);
+                    collectibles.splice(i, 1);
+                    continue;
+                }
+
+                // Remove if off screen
+                if (collectibles[i].x + collectibles[i].radius < 0) {
+                    collectibles.splice(i, 1);
+                }
+            }
+
+            // Move enemies from right to left (only for mermaid)
+            if (playerType === 'mermaid') {
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    enemies[i].x -= gameSpeed;
+
+                    // Check collision with player
+                    if (checkCollision(player, enemies[i])) {
+                        endGame();
+                        return;
+                    }
+
+                    // Remove if off screen
+                    if (enemies[i].x + enemies[i].width < 0) {
+                        enemies.splice(i, 1);
+                    }
+                }
+            }
+
+            // Randomly spawn collectibles
+            if (Math.random() < 0.02) {
+                createCollectible();
+            }
+
+            // Randomly spawn enemies (only for mermaid, less frequently)
+            if (playerType === 'mermaid' && Math.random() < 0.01) {
+                createEnemy();
+            }
+
+            // Randomly spawn rainbows (only for unicorn)
+            if (playerType === 'unicorn' && Math.random() < 0.003) {
+                createRainbow();
+            }
+
+            // Randomly spawn clouds (for unicorn)
+            if (playerType === 'unicorn' && Math.random() < 0.008) {
+                createCloud();
+            }
+
+            // Update rainbow positions
+            for (let i = rainbows.length - 1; i >= 0; i--) {
+                rainbows[i].x -= rainbows[i].speed;
+                // Remove if off screen
+                if (rainbows[i].x + rainbows[i].width < 0) {
+                    rainbows.splice(i, 1);
+                }
+            }
+
+            // Update cloud positions
+            for (let i = clouds.length - 1; i >= 0; i--) {
+                clouds[i].x -= clouds[i].speed;
+                // Remove if off screen
+                if (clouds[i].x + clouds[i].size * 2 < 0) {
+                    clouds.splice(i, 1);
+                }
+            }
+
+            // Update confetti particles
+            for (let i = confetti.length - 1; i >= 0; i--) {
+                const particle = confetti[i];
+                // Apply gravity
+                particle.vy += particle.gravity;
+                // Update position
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                // Update rotation
+                particle.rotation += particle.rotationSpeed;
+                // Remove if off screen or too far down
+                if (particle.x < -10 || particle.x > canvas.width + 10 || 
+                    particle.y > canvas.height + 10) {
+                    confetti.splice(i, 1);
+                }
+            }
+
+            // Update score display
+            document.getElementById('playerScore').textContent = playerScore;
+        }
+
+        // Draw unicorn figure (matching the attached image exactly)
+        function drawUnicorn(x, y) {
+            const centerX = x + player.width / 2;
+            const centerY = y + player.height / 2;
+            
+            // Save context for transformations
+            ctx.save();
+            
+            // Draw body (light creamy beige)
+            ctx.fillStyle = '#F5DEB3'; // Creamy beige
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY + 5, 28, 22, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw head (creamy beige)
+            ctx.beginPath();
+            ctx.ellipse(centerX - 12, centerY - 8, 16, 14, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw muzzle (light pink)
+            ctx.fillStyle = '#FFB6C1'; // Light pink
+            ctx.beginPath();
+            ctx.ellipse(centerX - 20, centerY - 5, 6, 5, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw ear (pointed, beige outer with purple inner)
+            ctx.fillStyle = '#F5DEB3'; // Beige
+            ctx.beginPath();
+            ctx.moveTo(centerX - 5, centerY - 20);
+            ctx.lineTo(centerX - 12, centerY - 28);
+            ctx.lineTo(centerX - 2, centerY - 22);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Inner ear (purple)
+            ctx.fillStyle = '#800080'; // Deep purple
+            ctx.beginPath();
+            ctx.moveTo(centerX - 6, centerY - 21);
+            ctx.lineTo(centerX - 10, centerY - 26);
+            ctx.lineTo(centerX - 3, centerY - 22);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw horn (golden, pointed, curving slightly upwards)
+            ctx.fillStyle = '#FFD700'; // Gold
+            ctx.beginPath();
+            ctx.moveTo(centerX - 6, centerY - 22);
+            ctx.lineTo(centerX - 8, centerY - 32);
+            ctx.lineTo(centerX - 4, centerY - 32);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw mane (pink and magenta shades, layered and vibrant)
+            const maneColors = ['#FF69B4', '#FF1493', '#DC143C', '#C71585', '#FF69B4', '#FF1493']; // Pink and magenta shades
+            const maneYStart = centerY - 15;
+            const maneXStart = centerX - 20;
+            
+            for (let i = 0; i < maneColors.length; i++) {
+                ctx.fillStyle = maneColors[i];
+                ctx.beginPath();
+                const yPos = maneYStart - (i * 3);
+                ctx.moveTo(maneXStart, yPos);
+                ctx.quadraticCurveTo(maneXStart - 10, yPos - 6, maneXStart - 4, yPos - 10);
+                ctx.quadraticCurveTo(maneXStart - 12, yPos - 14, maneXStart - 6, yPos - 18);
+                ctx.quadraticCurveTo(maneXStart - 8, yPos - 16, maneXStart - 2, yPos - 12);
+                ctx.quadraticCurveTo(maneXStart, yPos - 8, maneXStart, yPos);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            // Draw tail (deep magenta/purple with bright yellow section at top)
+            // Yellow section at top
+            ctx.fillStyle = '#FFD700'; // Bright yellow
+            ctx.beginPath();
+            ctx.moveTo(centerX + 22, centerY + 8);
+            ctx.quadraticCurveTo(centerX + 25, centerY + 10, centerX + 24, centerY + 14);
+            ctx.quadraticCurveTo(centerX + 22, centerY + 12, centerX + 20, centerY + 10);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Deep magenta/purple tail
+            ctx.fillStyle = '#8B008B'; // Deep magenta
+            ctx.beginPath();
+            ctx.moveTo(centerX + 20, centerY + 10);
+            ctx.quadraticCurveTo(centerX + 28, centerY + 15, centerX + 26, centerY + 22);
+            ctx.quadraticCurveTo(centerX + 30, centerY + 28, centerX + 28, centerY + 35);
+            ctx.quadraticCurveTo(centerX + 25, centerY + 32, centerX + 22, centerY + 28);
+            ctx.quadraticCurveTo(centerX + 20, centerY + 22, centerX + 18, centerY + 18);
+            ctx.quadraticCurveTo(centerX + 19, centerY + 14, centerX + 20, centerY + 10);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw five-pointed yellow star on flank
+            ctx.fillStyle = '#FFD700'; // Yellow
+            ctx.beginPath();
+            const starX = centerX + 8;
+            const starY = centerY + 2;
+            const outerRadius = 6;
+            const innerRadius = 3;
+            for (let i = 0; i < 10; i++) {
+                const angle = (Math.PI / 5) * i - Math.PI / 2;
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const px = starX + Math.cos(angle) * radius;
+                const py = starY + Math.sin(angle) * radius;
+                if (i === 0) {
+                    ctx.moveTo(px, py);
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw legs (creamy beige)
+            ctx.fillStyle = '#F5DEB3';
+            // Front left leg (slightly raised for dynamic pose)
+            ctx.beginPath();
+            ctx.ellipse(centerX - 18, centerY + 18, 5, 10, 0.4, 0, Math.PI * 2);
+            ctx.fill();
+            // Front right leg
+            ctx.beginPath();
+            ctx.ellipse(centerX - 2, centerY + 24, 5, 12, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            // Back left leg
+            ctx.beginPath();
+            ctx.ellipse(centerX + 8, centerY + 24, 5, 12, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            // Back right leg
+            ctx.beginPath();
+            ctx.ellipse(centerX + 22, centerY + 22, 5, 12, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw deep purple hooves (all four)
+            ctx.fillStyle = '#800080'; // Deep purple
+            ctx.beginPath();
+            ctx.ellipse(centerX - 18, centerY + 28, 5, 3, 0.4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(centerX - 2, centerY + 36, 5, 3, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(centerX + 8, centerY + 36, 5, 3, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(centerX + 22, centerY + 34, 5, 3, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw eye (dark oval with white highlight)
+            ctx.fillStyle = '#000000'; // Dark
+            ctx.beginPath();
+            ctx.ellipse(centerX - 18, centerY - 10, 3, 4, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            // White highlight
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(centerX - 17, centerY - 11, 1, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+
+        // Draw mermaid figure (matching the attached image style, smaller size)
+        function drawMermaid(x, y) {
+            const centerX = x + player.width / 2;
+            const centerY = y + player.height / 2;
+            const scale = 0.65; // Scale factor to make mermaid smaller (65% of original size)
+            
+            // Save context for transformations
+            ctx.save();
+            
+            // Draw head (medium-brown skin tone) - scaled down
+            ctx.fillStyle = '#8B6F47'; // Medium brown
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY - 12, 14 * scale, 16 * scale, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw hair (light pastel blue, long and flowing) - scaled down
+            ctx.fillStyle = '#B0E0E6'; // Light pastel blue
+            ctx.beginPath();
+            // Left side of hair
+            ctx.moveTo(centerX - 12 * scale, centerY - 15 * scale);
+            ctx.quadraticCurveTo(centerX - 18 * scale, centerY - 18 * scale, centerX - 15 * scale, centerY - 21 * scale);
+            ctx.quadraticCurveTo(centerX - 20 * scale, centerY - 23 * scale, centerX - 16 * scale, centerY - 25 * scale);
+            ctx.quadraticCurveTo(centerX - 14 * scale, centerY - 24 * scale, centerX - 12 * scale, centerY - 21 * scale);
+            ctx.quadraticCurveTo(centerX - 10 * scale, centerY - 19 * scale, centerX - 12 * scale, centerY - 17 * scale);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Right side of hair
+            ctx.beginPath();
+            ctx.moveTo(centerX + 12 * scale, centerY - 15 * scale);
+            ctx.quadraticCurveTo(centerX + 18 * scale, centerY - 18 * scale, centerX + 15 * scale, centerY - 21 * scale);
+            ctx.quadraticCurveTo(centerX + 20 * scale, centerY - 23 * scale, centerX + 16 * scale, centerY - 25 * scale);
+            ctx.quadraticCurveTo(centerX + 14 * scale, centerY - 24 * scale, centerX + 12 * scale, centerY - 21 * scale);
+            ctx.quadraticCurveTo(centerX + 10 * scale, centerY - 19 * scale, centerX + 12 * scale, centerY - 17 * scale);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Hair flowing down to shoulders - scaled down
+            ctx.beginPath();
+            ctx.moveTo(centerX - 8 * scale, centerY - 9 * scale);
+            ctx.quadraticCurveTo(centerX - 12 * scale, centerY - 6 * scale, centerX - 10 * scale, centerY - 3 * scale);
+            ctx.quadraticCurveTo(centerX - 8 * scale, centerY - 1 * scale, centerX - 6 * scale, centerY - 5 * scale);
+            ctx.quadraticCurveTo(centerX - 4 * scale, centerY - 7 * scale, centerX - 6 * scale, centerY - 11 * scale);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(centerX + 8 * scale, centerY - 9 * scale);
+            ctx.quadraticCurveTo(centerX + 12 * scale, centerY - 6 * scale, centerX + 10 * scale, centerY - 3 * scale);
+            ctx.quadraticCurveTo(centerX + 8 * scale, centerY - 1 * scale, centerX + 6 * scale, centerY - 5 * scale);
+            ctx.quadraticCurveTo(centerX + 4 * scale, centerY - 7 * scale, centerX + 6 * scale, centerY - 11 * scale);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw torso (medium-brown skin) - scaled down
+            ctx.fillStyle = '#8B6F47';
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY + 1, 16 * scale, 18 * scale, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw purple strapless top (bra-like with two rounded cup shapes) - scaled down
+            ctx.fillStyle = '#9370DB'; // Medium purple
+            ctx.beginPath();
+            // Left cup
+            ctx.ellipse(centerX - 6 * scale, centerY - 1, 7 * scale, 8 * scale, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // Right cup
+            ctx.beginPath();
+            ctx.ellipse(centerX + 6 * scale, centerY - 1, 7 * scale, 8 * scale, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw arms raised upwards and outwards (bent at elbows) - scaled down
+            ctx.fillStyle = '#8B6F47';
+            // Left arm
+            ctx.beginPath();
+            ctx.ellipse(centerX - 18 * scale, centerY - 5 * scale, 5 * scale, 12 * scale, -0.5, 0, Math.PI * 2);
+            ctx.fill();
+            // Left hand (open, fingers spread)
+            ctx.beginPath();
+            ctx.ellipse(centerX - 22 * scale, centerY - 11 * scale, 4 * scale, 3 * scale, -0.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Right arm
+            ctx.beginPath();
+            ctx.ellipse(centerX + 18 * scale, centerY - 5 * scale, 5 * scale, 12 * scale, 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            // Right hand (open, fingers spread)
+            ctx.beginPath();
+            ctx.ellipse(centerX + 22 * scale, centerY - 11 * scale, 4 * scale, 3 * scale, 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw tail (deep rich blue, curving to the left) - MUCH SHORTER
+            ctx.fillStyle = '#00008B'; // Deep rich blue
+            ctx.beginPath();
+            // Tail body (curving, shortened)
+            ctx.moveTo(centerX - 2 * scale, centerY + 11 * scale);
+            ctx.quadraticCurveTo(centerX - 8 * scale, centerY + 16 * scale, centerX - 12 * scale, centerY + 22 * scale);
+            ctx.quadraticCurveTo(centerX - 15 * scale, centerY + 28 * scale, centerX - 18 * scale, centerY + 34 * scale);
+            ctx.lineTo(centerX + 2 * scale, centerY + 34 * scale);
+            ctx.quadraticCurveTo(centerX - 2 * scale, centerY + 28 * scale, centerX + 2 * scale, centerY + 22 * scale);
+            ctx.quadraticCurveTo(centerX + 4 * scale, centerY + 16 * scale, centerX + 2 * scale, centerY + 11 * scale);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw scale pattern on tail (overlapping semi-circular lines) - scaled down
+            ctx.strokeStyle = '#0000CD'; // Slightly lighter blue for scales
+            ctx.lineWidth = 1.5 * scale;
+            for (let i = 0; i < 3; i++) {
+                const scaleY = centerY + 15 + (i * 6 * scale);
+                ctx.beginPath();
+                ctx.arc(centerX - 8 * scale, scaleY, 6 * scale, 0, Math.PI);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(centerX - 2 * scale, scaleY + 3 * scale, 6 * scale, 0, Math.PI);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(centerX + 4 * scale, scaleY, 6 * scale, 0, Math.PI);
+                ctx.stroke();
+            }
+            
+            // Draw tail fin (fluke) in pastel purple with wavy/scalloped edge - scaled down and shorter
+            ctx.fillStyle = '#DDA0DD'; // Pastel purple (matching top)
+            ctx.beginPath();
+            ctx.moveTo(centerX - 18 * scale, centerY + 34 * scale);
+            ctx.quadraticCurveTo(centerX - 25 * scale, centerY + 37 * scale, centerX - 22 * scale, centerY + 40 * scale);
+            ctx.quadraticCurveTo(centerX - 20 * scale, centerY + 42 * scale, centerX - 15 * scale, centerY + 41 * scale);
+            ctx.quadraticCurveTo(centerX - 10 * scale, centerY + 40 * scale, centerX - 8 * scale, centerY + 37 * scale);
+            ctx.quadraticCurveTo(centerX - 5 * scale, centerY + 35 * scale, centerX, centerY + 37 * scale);
+            ctx.quadraticCurveTo(centerX + 5 * scale, centerY + 35 * scale, centerX + 8 * scale, centerY + 37 * scale);
+            ctx.quadraticCurveTo(centerX + 10 * scale, centerY + 40 * scale, centerX + 15 * scale, centerY + 41 * scale);
+            ctx.quadraticCurveTo(centerX + 20 * scale, centerY + 42 * scale, centerX + 22 * scale, centerY + 40 * scale);
+            ctx.quadraticCurveTo(centerX + 25 * scale, centerY + 37 * scale, centerX + 18 * scale, centerY + 34 * scale);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw large round dark brown eyes with white highlights - scaled down
+            ctx.fillStyle = '#654321'; // Dark brown
+            ctx.beginPath();
+            ctx.arc(centerX - 5 * scale, centerY - 13 * scale, 4 * scale, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(centerX + 5 * scale, centerY - 13 * scale, 4 * scale, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // White highlights in eyes
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(centerX - 4 * scale, centerY - 14 * scale, 1.5 * scale, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(centerX + 6 * scale, centerY - 14 * scale, 1.5 * scale, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw thin dark brown eyebrows - scaled down
+            ctx.strokeStyle = '#654321';
+            ctx.lineWidth = 2 * scale;
+            ctx.beginPath();
+            ctx.moveTo(centerX - 8 * scale, centerY - 16 * scale);
+            ctx.lineTo(centerX - 2 * scale, centerY - 15 * scale);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(centerX + 2 * scale, centerY - 15 * scale);
+            ctx.lineTo(centerX + 8 * scale, centerY - 16 * scale);
+            ctx.stroke();
+            
+            // Draw small gentle smile (light pink) - scaled down
+            ctx.strokeStyle = '#FFB6C1'; // Light pink
+            ctx.lineWidth = 2 * scale;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - 10 * scale, 4 * scale, 0, Math.PI);
+            ctx.stroke();
+            
+            // Draw tiny simple dot nose - scaled down
+            ctx.fillStyle = '#654321';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - 12 * scale, 1 * scale, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+
+        // Draw cloud (fluffy white cloud made of circles)
+        function drawCloud(x, y, size, opacity) {
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            ctx.fillStyle = '#FFFFFF'; // White
+            
+            // Draw cloud using multiple overlapping circles for a fluffy effect
+            const circles = [
+                { cx: x, cy: y, radius: size * 0.6 },
+                { cx: x - size * 0.4, cy: y, radius: size * 0.5 },
+                { cx: x + size * 0.4, cy: y, radius: size * 0.5 },
+                { cx: x - size * 0.2, cy: y - size * 0.2, radius: size * 0.4 },
+                { cx: x + size * 0.2, cy: y - size * 0.2, radius: size * 0.4 }
+            ];
+            
+            for (let circle of circles) {
+                ctx.beginPath();
+                ctx.arc(circle.cx, circle.cy, circle.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.restore();
+        }
+
+        // Draw rainbow arc
+        function drawRainbow(x, y, width, height, opacity) {
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            
+            // Rainbow colors from outer to inner
+            const rainbowColors = [
+                '#FF0000', // Red
+                '#FF7F00', // Orange
+                '#FFFF00', // Yellow
+                '#00FF00', // Green
+                '#0000FF', // Blue
+                '#4B0082', // Indigo
+                '#9400D3'  // Violet
+            ];
+            
+            const centerX = x + width / 2;
+            const centerY = y + height;
+            const maxRadius = height;
+            
+            // Draw each color band as an arc
+            for (let i = 0; i < rainbowColors.length; i++) {
+                const radius = maxRadius - (i * (maxRadius / rainbowColors.length));
+                const lineWidth = maxRadius / rainbowColors.length;
+                
+                ctx.strokeStyle = rainbowColors[i];
+                ctx.lineWidth = lineWidth;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, Math.PI, 0, false); // Top half circle
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+        }
+
+        // Draw everything on canvas
+        function draw() {
+            const settings = gameSettings[playerType] || gameSettings.unicorn;
+
+            // Clear canvas and set background
+            ctx.fillStyle = settings.bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (gameState !== 'playing') return;
+
+            // Draw collectibles (circles)
+            ctx.fillStyle = settings.collectibleColor;
+            for (let collectible of collectibles) {
+                if (!collectible.collected) {
+                    ctx.beginPath();
+                    ctx.arc(collectible.x, collectible.y, collectible.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Draw enemies (squares) - only for mermaid
+            if (playerType === 'mermaid') {
+                ctx.fillStyle = settings.enemyColor;
+                for (let enemy of enemies) {
+                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                }
+            }
+
+            // Draw clouds (only for unicorn)
+            if (playerType === 'unicorn') {
+                for (let cloud of clouds) {
+                    drawCloud(cloud.x, cloud.y, cloud.size, cloud.opacity);
+                }
+            }
+
+            // Draw rainbows (only for unicorn)
+            if (playerType === 'unicorn') {
+                for (let rainbow of rainbows) {
+                    drawRainbow(rainbow.x, rainbow.y, rainbow.width, rainbow.height, rainbow.opacity);
+                }
+            }
+
+            // Draw confetti particles
+            for (let particle of confetti) {
+                ctx.save();
+                ctx.translate(particle.x, particle.y);
+                ctx.rotate(particle.rotation);
+                ctx.fillStyle = particle.color;
+                // Draw confetti as a small rectangle
+                ctx.fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size);
+                ctx.restore();
+            }
+
+            // Draw player figure
+            if (playerType === 'unicorn') {
+                drawUnicorn(player.x, player.y);
+            } else if (playerType === 'mermaid') {
+                drawMermaid(player.x, player.y);
+            }
+        }
+
+        // End the game
+        function endGame() {
+            gameState = 'gameOver';
+            document.getElementById('finalScore').textContent = 
+                `Final Score: ${playerScore}`;
+            document.getElementById('gameOver').style.display = 'block';
+        }
+
+        // Main game loop
+        function gameLoop() {
+            update();
+            draw();
+            
+            if (gameState === 'playing') {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Initial draw (menu state)
+        draw();
+    </script>
+</body>
+</html>

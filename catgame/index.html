@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Cat Runner - Endless Runner Game</title>
+    <style>
+        /* ========== CSS RESET & BASE STYLES ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            background: linear-gradient(to bottom, #FFE5F1 0%, #FFF0F8 50%, #F0E6FF 100%);
+            touch-action: none; /* Prevent scrolling on mobile */
+            user-select: none; /* Prevent text selection during gameplay */
+        }
+
+        /* ========== GAME CONTAINER ========== */
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ========== START SCREEN ========== */
+        #startScreen {
+            text-align: center;
+            padding: 20px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        #startScreen h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #8B5A9F;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .cat-option {
+            background: white;
+            border: 3px solid #E8B4D4;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .cat-option:hover, .cat-option:active {
+            transform: scale(1.05);
+            border-color: #8B5A9F;
+            box-shadow: 0 6px 20px rgba(139, 90, 159, 0.3);
+        }
+
+        .cat-option .cat-emoji {
+            font-size: 4rem;
+            display: block;
+            margin-bottom: 15px;
+        }
+
+        .cat-option .cat-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #8B5A9F;
+        }
+
+        /* ========== GAME SCREEN ========== */
+        #gameScreen {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Score Display */
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: #8B5A9F;
+            z-index: 100;
+            text-shadow: 2px 2px 4px rgba(255,255,255,0.8);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .score-stars {
+            color: #FFD700;
+            font-size: 1.8rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Game World */
+        #gameWorld {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #FFE5F1 0%, #FFF0F8 70%, #F0E6FF 100%);
+        }
+
+        /* Ground */
+        #ground {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 200%;
+            height: 80px;
+            background: linear-gradient(to top, #9B7FB8 0%, #B5A0D0 100%);
+            border-top: 3px solid #8B5A9F;
+        }
+
+        /* Ground Pattern (simple texture) */
+        #ground::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 50px,
+                rgba(139, 90, 159, 0.1) 50px,
+                rgba(139, 90, 159, 0.1) 51px
+            );
+        }
+
+        /* Cat Container */
+        #cat {
+            position: absolute;
+            left: 20%;
+            bottom: 80px;
+            width: 60px;
+            height: 60px;
+            z-index: 50;
+            transition: left 0s; /* Remove transition for instant movement */
+        }
+
+        /* Cat Body */
+        .cat-body {
+            width: 50px;
+            height: 40px;
+            background: var(--cat-color, #333);
+            border-radius: 50% 50% 40% 40%;
+            position: absolute;
+            top: 0;
+            left: 5px;
+            transition: transform 0.1s ease-out;
+        }
+
+        /* Cat Head */
+        .cat-head {
+            width: 35px;
+            height: 35px;
+            background: var(--cat-color, #333);
+            border-radius: 50%;
+            position: absolute;
+            top: -10px;
+            left: 7px;
+        }
+
+        /* Cat Ears */
+        .cat-head::before,
+        .cat-head::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 12px solid var(--cat-color, #333);
+            top: -5px;
+        }
+
+        .cat-head::before {
+            left: 5px;
+        }
+
+        .cat-head::after {
+            right: 5px;
+        }
+
+        /* Cat Eyes */
+        .cat-eyes {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .cat-eye {
+            width: 6px;
+            height: 8px;
+            background: #FFD700;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .cat-eye::after {
+            content: '';
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #000;
+            border-radius: 50%;
+            top: 2px;
+            left: 1.5px;
+        }
+
+        /* Cat Nose */
+        .cat-nose {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 3px solid transparent;
+            border-right: 3px solid transparent;
+            border-top: 4px solid #FFB6C1;
+        }
+
+        /* Cat Legs */
+        .cat-legs {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 20px;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 8px;
+        }
+
+        .cat-leg {
+            width: 10px;
+            height: 18px;
+            background: var(--cat-color, #333);
+            border-radius: 5px 5px 0 0;
+        }
+
+        /* Cat Tail */
+        .cat-tail {
+            position: absolute;
+            bottom: 20px;
+            right: -8px;
+            width: 12px;
+            height: 25px;
+            background: var(--cat-color, #333);
+            border-radius: 0 0 12px 0;
+            transform-origin: top center;
+        }
+
+        /* Cat jumping animation */
+        .cat-jumping .cat-body {
+            transform: rotate(-10deg);
+        }
+
+        /* Obstacle */
+        .obstacle {
+            position: absolute;
+            bottom: 80px;
+            width: 40px;
+            height: 60px;
+            background: #FF6B9D;
+            border-radius: 10px 10px 0 0;
+            z-index: 40;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Obstacle decoration (simple design) */
+        .obstacle::before {
+            content: '⬆';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        /* ========== GAME OVER SCREEN ========== */
+        #gameOverScreen {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        #gameOverScreen h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #8B5A9F;
+        }
+
+        #finalScore {
+            font-size: 2rem;
+            margin: 20px 0;
+            color: #FF6B9D;
+            font-weight: bold;
+        }
+
+        .btn {
+            background: #8B5A9F;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover, .btn:active {
+            background: #6B4580;
+            transform: scale(1.05);
+        }
+
+        /* ========== THEME VARIATIONS ========== */
+        /* Black cat theme */
+        body.black-cat-theme {
+            background: linear-gradient(to bottom, #E8E0F0 0%, #F5F0FF 50%, #E0D6F0 100%);
+        }
+
+        /* White cat theme */
+        body.white-cat-theme {
+            background: linear-gradient(to bottom, #FFF5F0 0%, #FFFBF5 50%, #F5F0FF 100%);
+        }
+
+        /* ========== MOBILE RESPONSIVE ========== */
+        @media (max-width: 480px) {
+            #startScreen h1 {
+                font-size: 2rem;
+            }
+
+            .cat-option {
+                padding: 20px;
+            }
+
+            .cat-option .cat-emoji {
+                font-size: 3rem;
+            }
+
+            #score {
+                font-size: 1.5rem;
+                gap: 8px;
+            }
+
+            .score-stars {
+                font-size: 1.3rem;
+            }
+
+            #cat {
+                width: 50px;
+                height: 50px;
+            }
+
+            .cat-body {
+                width: 40px;
+                height: 32px;
+            }
+
+            .cat-head {
+                width: 28px;
+                height: 28px;
+            }
+
+            .obstacle {
+                width: 30px;
+                height: 45px;
+            }
+        }
+    </style>
+</head>
+<body id="body">
+    <!-- ========== START SCREEN ========== -->
+    <div id="gameContainer">
+        <div id="startScreen">
+            <h1>🐱 Cat Runner 🐱</h1>
+            <div class="cat-option" id="blackCatOption">
+                <span class="cat-emoji">🐈‍⬛</span>
+                <div class="cat-name">Play as Black Cat</div>
+            </div>
+            <div class="cat-option" id="whiteCatOption">
+                <span class="cat-emoji">🐱</span>
+                <div class="cat-name">Play as Gray Cat</div>
+            </div>
+        </div>
+
+        <!-- ========== GAME SCREEN ========== -->
+        <div id="gameScreen">
+            <div id="score">
+                <span>Score: <span id="scoreValue">0</span></span>
+                <span class="score-stars" id="scoreStars">⭐</span>
+            </div>
+            <div id="gameWorld">
+                <div id="ground"></div>
+                <div id="cat">
+                    <div class="cat-body">
+                        <div class="cat-head">
+                            <div class="cat-eyes">
+                                <div class="cat-eye"></div>
+                                <div class="cat-eye"></div>
+                            </div>
+                            <div class="cat-nose"></div>
+                        </div>
+                        <div class="cat-tail"></div>
+                    </div>
+                    <div class="cat-legs">
+                        <div class="cat-leg"></div>
+                        <div class="cat-leg"></div>
+                        <div class="cat-leg"></div>
+                        <div class="cat-leg"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== GAME OVER SCREEN ========== -->
+        <div id="gameOverScreen">
+            <h2>Game Over! 😿</h2>
+            <div id="finalScore">Score: 0</div>
+            <button class="btn" id="restartBtn">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // ========== GAME STATE ==========
+        let gameState = 'start'; // 'start', 'playing', 'gameover'
+        let selectedCat = ''; // 'black' or 'white'
+        let score = 0;
+        let gameSpeed = 2; // Base speed
+        let gameSpeedMultiplier = 1; // Increases over time
+        let lastTime = 0;
+        let animationId = null;
+
+        // ========== CAT PROPERTIES ==========
+        let catY = 0; // Height above ground (0 = on ground, positive = above ground)
+        let catX = 0; // Horizontal position (in pixels from left, will be initialized)
+        let catVelocity = 0; // Vertical velocity
+        let isJumping = false;
+        const gravity = -0.8; // Negative gravity (pulls down, reducing height)
+        const jumpPower = 22; // Positive jump power (increases height) - enough to easily clear 60px obstacles
+        const groundY = 0; // Ground is at y=0
+        const catHorizontalSpeed = 5; // Pixels per frame for horizontal movement
+        let moveLeft = false;
+        let moveRight = false;
+
+        // ========== OBSTACLE SYSTEM ==========
+        let obstacles = [];
+        let obstacleSpawnTimer = 0;
+        const obstacleSpawnInterval = 120; // Frames between obstacles
+
+        // ========== GROUND SCROLLING ==========
+        let groundOffset = 0;
+
+        // ========== DOM ELEMENTS ==========
+        const startScreen = document.getElementById('startScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const scoreDisplay = document.getElementById('score');
+        const scoreValueDisplay = document.getElementById('scoreValue');
+        const scoreStarsDisplay = document.getElementById('scoreStars');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const catElement = document.getElementById('cat');
+        const groundElement = document.getElementById('ground');
+        const gameWorld = document.getElementById('gameWorld');
+        const body = document.getElementById('body');
+        const restartBtn = document.getElementById('restartBtn');
+
+        // ========== CAT SELECTION ==========
+        document.getElementById('blackCatOption').addEventListener('click', () => {
+            selectedCat = 'black';
+            startGame();
+        });
+
+        document.getElementById('whiteCatOption').addEventListener('click', () => {
+            selectedCat = 'white';
+            startGame();
+        });
+
+        // ========== START GAME ==========
+        function startGame() {
+            // Hide start screen, show game screen
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+
+            // Set cat color based on selection
+            if (selectedCat === 'black') {
+                catElement.style.setProperty('--cat-color', '#2C2C2C');
+                body.className = 'black-cat-theme';
+            } else {
+                catElement.style.setProperty('--cat-color', '#808080');
+                body.className = 'white-cat-theme';
+            }
+
+            // Reset game state
+            gameState = 'playing';
+            score = 0;
+            gameSpeed = 2;
+            gameSpeedMultiplier = 1;
+            catY = 0;
+            catX = window.innerWidth * 0.2; // Initialize at 20% of screen width
+            catVelocity = 0;
+            isJumping = false;
+            moveLeft = false;
+            moveRight = false;
+            obstacles = [];
+            obstacleSpawnTimer = 0;
+            groundOffset = 0;
+            lastTime = performance.now();
+
+            // Update score display
+            updateScore();
+
+            // Start game loop
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            gameLoop();
+        }
+
+        // ========== GAME LOOP ==========
+        function gameLoop(currentTime) {
+            if (gameState !== 'playing') return;
+
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+
+            // Gradually increase game speed
+            gameSpeedMultiplier += 0.0001;
+            const currentSpeed = gameSpeed * gameSpeedMultiplier;
+
+            // ========== CAT PHYSICS ==========
+            // Apply gravity
+            catVelocity += gravity;
+            catY += catVelocity;
+
+            // Ground collision (catY represents height above ground, 0 = on ground)
+            if (catY < groundY) {
+                catY = groundY;
+                catVelocity = 0;
+                isJumping = false;
+                catElement.classList.remove('cat-jumping');
+            }
+
+            // ========== HORIZONTAL MOVEMENT ==========
+            // Handle horizontal movement with arrow keys
+            if (moveLeft) {
+                catX -= catHorizontalSpeed;
+            }
+            if (moveRight) {
+                catX += catHorizontalSpeed;
+            }
+
+            // Keep cat within screen bounds
+            const catWidth = 60;
+            const minX = 0;
+            const maxX = window.innerWidth - catWidth;
+            catX = Math.max(minX, Math.min(maxX, catX));
+
+            // Update cat position
+            catElement.style.left = catX + 'px';
+            // translateY with negative values moves UP, positive moves DOWN
+            // catY is positive when above ground, so we negate it to move up
+            catElement.style.transform = `translateY(${-catY}px)`;
+
+            // ========== OBSTACLE SYSTEM ==========
+            // Spawn obstacles
+            obstacleSpawnTimer++;
+            if (obstacleSpawnTimer >= obstacleSpawnInterval / gameSpeedMultiplier) {
+                spawnObstacle();
+                obstacleSpawnTimer = 0;
+            }
+
+            // Update and remove obstacles
+            obstacles.forEach((obstacle, index) => {
+                obstacle.x -= currentSpeed;
+                obstacle.element.style.left = obstacle.x + 'px';
+
+                // ========== COLLISION DETECTION (Check first to avoid scoring on collision) ==========
+                // Use getBoundingClientRect to get actual rendered positions
+                const catRect = catElement.getBoundingClientRect();
+                const obstacleElementRect = obstacle.element.getBoundingClientRect();
+
+                // Check if rectangles overlap
+                // Horizontal overlap: cat's left < obstacle's right AND cat's right > obstacle's left
+                // Vertical overlap: cat's bottom > obstacle's top AND cat's top < obstacle's bottom
+                const horizontalOverlap = catRect.left < obstacleElementRect.right && catRect.right > obstacleElementRect.left;
+                const verticalOverlap = catRect.bottom > obstacleElementRect.top && catRect.top < obstacleElementRect.bottom;
+                const isColliding = horizontalOverlap && verticalOverlap;
+
+                if (isColliding) {
+                    gameOver();
+                    return;
+                }
+
+                // ========== SCORE POINTS WHEN JUMPING OVER OBSTACLE ==========
+                // Give 10 points when obstacle passes behind the cat (if not already scored)
+                // Score when obstacle's right edge passes the cat's left edge
+                const catRightEdge = catX + 60; // Cat current X position + cat width
+                if (!obstacle.scored && obstacle.x + obstacle.width < catX) {
+                    // Obstacle's right edge has passed the cat's left edge - obstacle is behind
+                    obstacle.scored = true;
+                    score += 10;
+                    updateScore();
+                }
+
+                // Remove obstacles that are off screen
+                if (obstacle.x < -100) {
+                    obstacle.element.remove();
+                    obstacles.splice(index, 1);
+                }
+            });
+
+            // Update ground scroll (seamless looping)
+            groundOffset -= currentSpeed;
+            // Reset when scrolled one full screen width (since ground is 200% width)
+            if (groundOffset <= -window.innerWidth) {
+                groundOffset += window.innerWidth;
+            }
+            groundElement.style.transform = `translateX(${groundOffset}px)`;
+
+            // Continue game loop
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // ========== SPAWN OBSTACLE ==========
+        function spawnObstacle() {
+            const obstacle = document.createElement('div');
+            obstacle.className = 'obstacle';
+            obstacle.style.left = window.innerWidth + 'px';
+            gameWorld.appendChild(obstacle);
+
+            const obstacleData = {
+                element: obstacle,
+                x: window.innerWidth,
+                y: window.innerHeight - 80 - 60, // Above ground
+                width: 40,
+                height: 60,
+                scored: false // Track if player has scored points from this obstacle
+            };
+
+            obstacles.push(obstacleData);
+        }
+
+        // ========== JUMP ==========
+        function jump() {
+            if (gameState !== 'playing') return;
+            // Only allow jump when on ground (catY is 0 or very close to ground)
+            if (catY > 2) return; // Prevent jumping while already in air
+
+            isJumping = true;
+            catVelocity = jumpPower;
+            catElement.classList.add('cat-jumping');
+
+            // Play jump sound
+            playJumpSound();
+        }
+
+        // ========== JUMP SOUND (Web Audio API) ==========
+        function playJumpSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                // Different frequencies for different cats
+                if (selectedCat === 'black') {
+                    oscillator.frequency.value = 400; // Lower pitch for black cat
+                } else {
+                    oscillator.frequency.value = 500; // Higher pitch for gray cat
+                }
+
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (e) {
+                // Sound creation failed, continue without sound
+                console.log('Sound not available');
+            }
+        }
+
+        // ========== CONTROLS ==========
+        // Click/Tap to jump
+        gameScreen.addEventListener('click', jump);
+        gameScreen.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        });
+
+        // Keyboard support (spacebar for jump, arrow keys for horizontal movement)
+        document.addEventListener('keydown', (e) => {
+            if (gameState !== 'playing') return;
+            
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            } else if (e.code === 'ArrowLeft') {
+                e.preventDefault();
+                moveLeft = true;
+            } else if (e.code === 'ArrowRight') {
+                e.preventDefault();
+                moveRight = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (gameState !== 'playing') return;
+            
+            if (e.code === 'ArrowLeft') {
+                moveLeft = false;
+            } else if (e.code === 'ArrowRight') {
+                moveRight = false;
+            }
+        });
+
+        // ========== UPDATE SCORE ==========
+        function updateScore() {
+            const currentScore = Math.floor(score);
+            scoreValueDisplay.textContent = currentScore;
+            
+            // Show stars based on score (1 star per 50 points, max 5 stars)
+            const starCount = Math.min(Math.floor(currentScore / 50), 5);
+            scoreStarsDisplay.textContent = '⭐'.repeat(starCount || 1); // Always show at least 1 star
+        }
+
+        // ========== GAME OVER ==========
+        function gameOver() {
+            gameState = 'gameover';
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+
+            // Hide game screen, show game over screen
+            gameScreen.style.display = 'none';
+            gameOverScreen.style.display = 'block';
+            finalScoreDisplay.textContent = `Final Score: ${Math.floor(score)}`;
+        }
+
+        // ========== RESTART ==========
+        restartBtn.addEventListener('click', () => {
+            // Clear all obstacles
+            obstacles.forEach(obstacle => obstacle.element.remove());
+            obstacles = [];
+
+            // Return to start screen
+            gameOverScreen.style.display = 'none';
+            startScreen.style.display = 'block';
+            body.className = '';
+        });
+
+        // ========== PREVENT SCROLLING ON MOBILE ==========
+        document.addEventListener('touchmove', (e) => {
+            if (gameState === 'playing') {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>

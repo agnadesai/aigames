@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cats vs Dogs Arena</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98D8C8 100%);
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        h1 {
+            color: #FF6B6B;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .health-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            gap: 20px;
+        }
+
+        .health-bar-wrapper {
+            flex: 1;
+        }
+
+        .player-label {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .player1-label {
+            color: #FF6B6B;
+        }
+
+        .player2-label {
+            color: #4ECDC4;
+        }
+
+        .health-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 3px solid #333;
+        }
+
+        .health-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 15px;
+        }
+
+        .player1-health {
+            background: linear-gradient(to right, #FF6B6B, #FF8E8E);
+        }
+
+        .player2-health {
+            background: linear-gradient(to right, #4ECDC4, #7EDDD6);
+        }
+
+        .health-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        #gameCanvas {
+            border: 4px solid #333;
+            border-radius: 10px;
+            background: linear-gradient(to bottom, #90EE90 0%, #87CEEB 50%, #90EE90 100%);
+            display: block;
+            margin: 0 auto;
+        }
+
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .control-group {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 10px;
+            min-width: 200px;
+        }
+
+        .control-group h3 {
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        .control-group p {
+            font-size: 0.9em;
+            color: #666;
+            margin: 3px 0;
+        }
+
+        .winner-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 3em;
+            font-weight: bold;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+        }
+
+        .restart-btn {
+            margin-top: 15px;
+            padding: 12px 30px;
+            font-size: 1.2em;
+            background: #FF6B6B;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .restart-btn:active {
+            transform: translateY(0);
+        }
+
+        .relative {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🐱 Cats vs Dogs Arena 🐶</h1>
+        
+        <div class="health-container">
+            <div class="health-bar-wrapper">
+                <div class="player-label player1-label">🐱 Cat (Player 1)</div>
+                <div class="health-bar relative">
+                    <div class="health-fill player1-health" id="player1Health" style="width: 100%;"></div>
+                    <div class="health-text" id="player1HealthText">100 HP</div>
+                </div>
+            </div>
+            <div class="health-bar-wrapper">
+                <div class="player-label player2-label">🐶 Dog (Player 2)</div>
+                <div class="health-bar relative">
+                    <div class="health-fill player2-health" id="player2Health" style="width: 100%;"></div>
+                    <div class="health-text" id="player2HealthText">100 HP</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="relative">
+            <canvas id="gameCanvas" width="800" height="400"></canvas>
+            <div class="winner-message" id="winnerMessage"></div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <h3>🐱 Player 1 (Cat)</h3>
+                <p><strong>A</strong> - Move Left</p>
+                <p><strong>D</strong> - Move Right</p>
+                <p><strong>W</strong> - Jump</p>
+                <p><strong>F</strong> - Attack</p>
+            </div>
+            <div class="control-group">
+                <h3>🐶 Player 2 (Dog)</h3>
+                <p><strong>←</strong> - Move Left</p>
+                <p><strong>→</strong> - Move Right</p>
+                <p><strong>↑</strong> - Jump</p>
+                <p><strong>L</strong> - Attack</p>
+            </div>
+        </div>
+
+        <button class="restart-btn" id="restartBtn">Restart Game</button>
+    </div>
+
+    <script>
+        // ============================================
+        // GAME SETUP AND VARIABLES
+        // ============================================
+        
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        let gameOver = false;
+        let winner = null;
+        
+        // Ground level (where players stand)
+        const GROUND_Y = canvas.height - 50;
+        const GRAVITY = 0.8;
+        const JUMP_STRENGTH = -15;
+        const MOVE_SPEED = 5;
+        const ATTACK_DAMAGE = 10;
+        const ATTACK_COOLDOWN = 500; // milliseconds
+        
+        // ============================================
+        // PLAYER CLASS
+        // ============================================
+        
+        class Player {
+            constructor(x, y, color, emoji, name) {
+                this.x = x;
+                this.y = y;
+                this.width = 60;
+                this.height = 80;
+                this.color = color;
+                this.emoji = emoji;
+                this.name = name;
+                
+                // Physics
+                this.velocityX = 0;
+                this.velocityY = 0;
+                this.onGround = false;
+                
+                // Combat
+                this.health = 100;
+                this.maxHealth = 100;
+                this.isAttacking = false;
+                this.attackCooldown = 0;
+                this.attackDirection = 1; // 1 = facing right, -1 = facing left
+                
+                // Animation
+                this.attackTimer = 0;
+            }
+            
+            // Update player position and physics
+            update() {
+                // Apply gravity
+                if (!this.onGround) {
+                    this.velocityY += GRAVITY;
+                }
+                
+                // Update position
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+                
+                // Ground collision
+                if (this.y + this.height >= GROUND_Y) {
+                    this.y = GROUND_Y - this.height;
+                    this.velocityY = 0;
+                    this.onGround = true;
+                } else {
+                    this.onGround = false;
+                }
+                
+                // Screen boundaries
+                if (this.x < 0) {
+                    this.x = 0;
+                }
+                if (this.x + this.width > canvas.width) {
+                    this.x = canvas.width - this.width;
+                }
+                
+                // Update attack cooldown
+                if (this.attackCooldown > 0) {
+                    this.attackCooldown -= 16; // ~60fps
+                }
+                
+                // Update attack animation
+                if (this.isAttacking) {
+                    this.attackTimer += 16;
+                    if (this.attackTimer > 300) { // Attack animation lasts 300ms
+                        this.isAttacking = false;
+                        this.attackTimer = 0;
+                    }
+                }
+                
+                // Apply friction
+                this.velocityX *= 0.8;
+            }
+            
+            // Move left
+            moveLeft() {
+                this.velocityX = -MOVE_SPEED;
+                this.attackDirection = -1;
+            }
+            
+            // Move right
+            moveRight() {
+                this.velocityX = MOVE_SPEED;
+                this.attackDirection = 1;
+            }
+            
+            // Jump
+            jump() {
+                if (this.onGround) {
+                    this.velocityY = JUMP_STRENGTH;
+                    this.onGround = false;
+                }
+            }
+            
+            // Attack
+            attack() {
+                if (this.attackCooldown <= 0 && !this.isAttacking) {
+                    this.isAttacking = true;
+                    this.attackTimer = 0;
+                    this.attackCooldown = ATTACK_COOLDOWN;
+                }
+            }
+            
+            // Take damage
+            takeDamage(amount) {
+                this.health -= amount;
+                if (this.health < 0) {
+                    this.health = 0;
+                }
+            }
+            
+            // Check if player is alive
+            isAlive() {
+                return this.health > 0;
+            }
+            
+            // Get attack hitbox (area where attack can hit)
+            getAttackHitbox() {
+                if (!this.isAttacking) return null;
+                
+                const attackWidth = 40;
+                const attackHeight = 30;
+                const attackX = this.attackDirection === 1 
+                    ? this.x + this.width 
+                    : this.x - attackWidth;
+                const attackY = this.y + this.height / 2 - attackHeight / 2;
+                
+                return {
+                    x: attackX,
+                    y: attackY,
+                    width: attackWidth,
+                    height: attackHeight
+                };
+            }
+            
+            // Draw the player
+            draw() {
+                // Draw shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.beginPath();
+                ctx.ellipse(
+                    this.x + this.width / 2,
+                    GROUND_Y + 5,
+                    this.width / 2,
+                    10,
+                    0, 0, Math.PI * 2
+                );
+                ctx.fill();
+                
+                // Draw player body (rectangle)
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                
+                // Draw emoji
+                ctx.font = '50px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(
+                    this.emoji,
+                    this.x + this.width / 2,
+                    this.y + this.height / 2 + 15
+                );
+                
+                // Draw attack effect
+                if (this.isAttacking) {
+                    const hitbox = this.getAttackHitbox();
+                    if (hitbox) {
+                        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+                        ctx.fillRect(hitbox.x, hitbox.y, hitbox.width, hitbox.height);
+                        
+                        // Draw attack indicator
+                        ctx.strokeStyle = 'red';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(hitbox.x, hitbox.y, hitbox.width, hitbox.height);
+                    }
+                }
+            }
+        }
+        
+        // ============================================
+        // CREATE PLAYERS
+        // ============================================
+        
+        const player1 = new Player(100, GROUND_Y - 80, '#FF6B6B', '🐱', 'Cat');
+        const player2 = new Player(640, GROUND_Y - 80, '#4ECDC4', '🐶', 'Dog');
+        
+        // ============================================
+        // COLLISION DETECTION
+        // ============================================
+        
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+        
+        // Check if attacks hit players
+        function checkAttacks() {
+            const p1Hitbox = player1.getAttackHitbox();
+            const p2Hitbox = player2.getAttackHitbox();
+            
+            // Player 1 attacks Player 2
+            if (p1Hitbox && player2.isAlive()) {
+                const p2Rect = {
+                    x: player2.x,
+                    y: player2.y,
+                    width: player2.width,
+                    height: player2.height
+                };
+                
+                if (checkCollision(p1Hitbox, p2Rect)) {
+                    player2.takeDamage(ATTACK_DAMAGE);
+                    player1.isAttacking = false; // Stop attack after hit
+                }
+            }
+            
+            // Player 2 attacks Player 1
+            if (p2Hitbox && player1.isAlive()) {
+                const p1Rect = {
+                    x: player1.x,
+                    y: player1.y,
+                    width: player1.width,
+                    height: player1.height
+                };
+                
+                if (checkCollision(p2Hitbox, p1Rect)) {
+                    player1.takeDamage(ATTACK_DAMAGE);
+                    player2.isAttacking = false; // Stop attack after hit
+                }
+            }
+        }
+        
+        // ============================================
+        // INPUT HANDLING
+        // ============================================
+        
+        const keys = {};
+        
+        // Track key presses
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            
+            // Prevent default for game keys
+            if (['a', 'd', 'w', 'f', 'l', 'arrowleft', 'arrowright', 'arrowup'].includes(e.key.toLowerCase())) {
+                e.preventDefault();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+        
+        // Handle player input
+        function handleInput() {
+            if (gameOver) return;
+            
+            // Player 1 controls
+            if (keys['a']) {
+                player1.moveLeft();
+            }
+            if (keys['d']) {
+                player1.moveRight();
+            }
+            if (keys['w']) {
+                player1.jump();
+            }
+            if (keys['f']) {
+                player1.attack();
+            }
+            
+            // Player 2 controls
+            if (keys['arrowleft']) {
+                player2.moveLeft();
+            }
+            if (keys['arrowright']) {
+                player2.moveRight();
+            }
+            if (keys['arrowup']) {
+                player2.jump();
+            }
+            if (keys['l']) {
+                player2.attack();
+            }
+        }
+        
+        // ============================================
+        // DRAWING FUNCTIONS
+        // ============================================
+        
+        function drawBackground() {
+            // Sky gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(0.5, '#98D8C8');
+            gradient.addColorStop(1, '#90EE90');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw clouds
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            drawCloud(100, 50, 40);
+            drawCloud(300, 80, 50);
+            drawCloud(600, 60, 45);
+            
+            // Draw ground
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
+            
+            // Draw grass
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(0, GROUND_Y, canvas.width, 10);
+            
+            // Draw some decorative elements (trees, sun)
+            drawSun(700, 50, 30);
+            drawTree(50, GROUND_Y - 100);
+            drawTree(750, GROUND_Y - 100);
+        }
+        
+        function drawCloud(x, y, size) {
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.arc(x + size * 0.6, y, size * 0.8, 0, Math.PI * 2);
+            ctx.arc(x + size * 1.2, y, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function drawSun(x, y, radius) {
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Sun rays
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 8; i++) {
+                const angle = (Math.PI * 2 * i) / 8;
+                const startX = x + Math.cos(angle) * radius;
+                const startY = y + Math.sin(angle) * radius;
+                const endX = x + Math.cos(angle) * (radius + 15);
+                const endY = y + Math.sin(angle) * (radius + 15);
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            }
+        }
+        
+        function drawTree(x, y) {
+            // Tree trunk
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(x - 10, y, 20, 80);
+            
+            // Tree leaves
+            ctx.fillStyle = '#228B22';
+            ctx.beginPath();
+            ctx.arc(x, y - 20, 40, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // ============================================
+        // GAME LOGIC
+        // ============================================
+        
+        function updateGame() {
+            if (gameOver) return;
+            
+            // Handle input
+            handleInput();
+            
+            // Update players
+            player1.update();
+            player2.update();
+            
+            // Check for attacks
+            checkAttacks();
+            
+            // Check win condition
+            if (!player1.isAlive()) {
+                gameOver = true;
+                winner = '🐶 Dog Wins!';
+                showWinner();
+            } else if (!player2.isAlive()) {
+                gameOver = true;
+                winner = '🐱 Cat Wins!';
+                showWinner();
+            }
+        }
+        
+        function showWinner() {
+            const winnerMessage = document.getElementById('winnerMessage');
+            winnerMessage.textContent = winner;
+            winnerMessage.style.display = 'block';
+        }
+        
+        // ============================================
+        // RENDER FUNCTION
+        // ============================================
+        
+        function render() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background
+            drawBackground();
+            
+            // Draw players
+            if (player1.isAlive()) {
+                player1.draw();
+            }
+            if (player2.isAlive()) {
+                player2.draw();
+            }
+        }
+        
+        // ============================================
+        // UPDATE HEALTH BARS
+        // ============================================
+        
+        function updateHealthBars() {
+            const p1HealthBar = document.getElementById('player1Health');
+            const p2HealthBar = document.getElementById('player2Health');
+            const p1HealthText = document.getElementById('player1HealthText');
+            const p2HealthText = document.getElementById('player2HealthText');
+            
+            const p1Percent = (player1.health / player1.maxHealth) * 100;
+            const p2Percent = (player2.health / player2.maxHealth) * 100;
+            
+            p1HealthBar.style.width = p1Percent + '%';
+            p2HealthBar.style.width = p2Percent + '%';
+            
+            p1HealthText.textContent = Math.max(0, Math.ceil(player1.health)) + ' HP';
+            p2HealthText.textContent = Math.max(0, Math.ceil(player2.health)) + ' HP';
+        }
+        
+        // ============================================
+        // RESTART FUNCTION
+        // ============================================
+        
+        function restartGame() {
+            gameOver = false;
+            winner = null;
+            
+            // Reset players
+            player1.x = 100;
+            player1.y = GROUND_Y - 80;
+            player1.velocityX = 0;
+            player1.velocityY = 0;
+            player1.health = 100;
+            player1.isAttacking = false;
+            player1.attackCooldown = 0;
+            
+            player2.x = 640;
+            player2.y = GROUND_Y - 80;
+            player2.velocityX = 0;
+            player2.velocityY = 0;
+            player2.health = 100;
+            player2.isAttacking = false;
+            player2.attackCooldown = 0;
+            
+            // Hide winner message
+            document.getElementById('winnerMessage').style.display = 'none';
+            
+            // Update health bars
+            updateHealthBars();
+        }
+        
+        // ============================================
+        // GAME LOOP
+        // ============================================
+        
+        function gameLoop() {
+            updateGame();
+            render();
+            updateHealthBars();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        
+        document.getElementById('restartBtn').addEventListener('click', restartGame);
+        
+        // ============================================
+        // START GAME
+        // ============================================
+        
+        // Start the game loop
+        gameLoop();
+    </script>
+</body>
+</html>
