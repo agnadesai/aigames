@@ -54,14 +54,13 @@
             background: linear-gradient(90deg, #4ecdc4, #44a08d);
             height: 30px;
             border-radius: 15px;
-            transition: width 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: bold;
-            font-size: 1.1em;
-            width: 3.85%; /* Start at 1/26 */
+            font-size: 1.5em;
+            width: 100%;
             min-width: 120px;
         }
 
@@ -182,6 +181,90 @@
             }
         }
 
+        /* Menu styles */
+        .menu-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .menu-options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .menu-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1.1em;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .menu-btn.active {
+            background: linear-gradient(135deg, #ff6b9d, #ff8fab);
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.4);
+        }
+
+        .character-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+            gap: 10px;
+            max-width: 500px;
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .character-btn {
+            background: white;
+            color: #667eea;
+            border: 3px solid #667eea;
+            padding: 15px;
+            font-size: 1.5em;
+            border-radius: 15px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .character-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .game-screen {
+            display: none;
+        }
+
+        .game-screen.show {
+            display: block;
+        }
+
+        .menu-screen.hide {
+            display: none;
+        }
+
         @media (max-width: 600px) {
             h1 {
                 font-size: 2em;
@@ -197,6 +280,16 @@
                 font-size: 1em;
                 min-width: 120px;
             }
+
+            .character-grid {
+                grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+                gap: 8px;
+            }
+
+            .character-btn {
+                padding: 10px;
+                font-size: 1.2em;
+            }
         }
     </style>
 </head>
@@ -204,21 +297,41 @@
     <div class="container">
         <h1>🌟 Letter Tracing Game 🌟</h1>
         
-        <div class="progress-container">
-            <div class="progress-bar" id="progressBar">
-                Letter <span id="currentLetter">A</span> of 26
+        <!-- Menu Screen -->
+        <div class="menu-screen" id="menuScreen">
+            <h2>Choose What to Trace</h2>
+            
+            <div class="menu-options">
+                <button class="menu-btn active" id="lettersBtn">Letters</button>
+                <button class="menu-btn" id="numbersBtn">Numbers</button>
             </div>
+
+            <div class="menu-options">
+                <button class="menu-btn active" id="uppercaseBtn">Uppercase</button>
+                <button class="menu-btn" id="lowercaseBtn">Lowercase</button>
+            </div>
+
+            <div class="character-grid" id="characterGrid"></div>
         </div>
 
-        <div class="canvas-container">
-            <canvas id="tracingCanvas" width="400" height="400"></canvas>
-            <div class="success-message" id="successMessage">✨ Great Job! ✨</div>
-        </div>
+        <!-- Game Screen -->
+        <div class="game-screen" id="gameScreen">
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar">
+                    <span id="currentLetter">A</span>
+                </div>
+            </div>
 
-        <div class="controls">
-            <button class="toggle-btn" id="caseToggle">Uppercase</button>
-            <button class="reset-btn" id="resetBtn">Reset</button>
-            <button id="nextBtn">Next Letter →</button>
+            <div class="canvas-container">
+                <canvas id="tracingCanvas" width="400" height="400"></canvas>
+                <div class="success-message" id="successMessage">✨ Great Job! ✨</div>
+            </div>
+
+            <div class="controls">
+                <button class="reset-btn" id="resetBtn">Reset</button>
+                <button id="backToMenuBtn">Back to Menu</button>
+                <button id="nextBtn">Next →</button>
+            </div>
         </div>
     </div>
 
@@ -229,17 +342,63 @@
         const progressBar = document.getElementById('progressBar');
         const currentLetterSpan = document.getElementById('currentLetter');
         const successMessage = document.getElementById('successMessage');
-        const caseToggle = document.getElementById('caseToggle');
         const resetBtn = document.getElementById('resetBtn');
         const nextBtn = document.getElementById('nextBtn');
+        const backToMenuBtn = document.getElementById('backToMenuBtn');
+        
+        // Menu elements
+        const menuScreen = document.getElementById('menuScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const lettersBtn = document.getElementById('lettersBtn');
+        const numbersBtn = document.getElementById('numbersBtn');
+        const uppercaseBtn = document.getElementById('uppercaseBtn');
+        const lowercaseBtn = document.getElementById('lowercaseBtn');
+        const characterGrid = document.getElementById('characterGrid');
 
-        let currentLetterIndex = 0;
+        // Game state
+        let currentCharacter = 'A';
+        let currentCharacterIndex = 0; // Index in the current character set
         let isUppercase = true;
+        let isLetters = true; // true for letters, false for numbers
         let isDrawing = false;
-        let tracedPath = [];
+        let tracedStrokes = []; // Array of strokes, each stroke is an array of points
+        let currentStroke = []; // Current stroke being drawn
         let letterPath = [];
         let isComplete = false;
         let canvasSize = 400;
+
+        // Character sets
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const numbers = '0123456789';
+
+        // Letter path definitions - ordered points for each letter
+        // Each letter is defined as an array of strokes, each stroke is an array of {x, y} points
+        // Points are normalized (0-1) and will be scaled to canvas size
+        const letterPaths = {
+            'A': [
+                // Left stroke
+                [{x: 0.3, y: 0.9}, {x: 0.3, y: 0.5}, {x: 0.5, y: 0.1}],
+                // Right stroke
+                [{x: 0.5, y: 0.1}, {x: 0.7, y: 0.5}, {x: 0.7, y: 0.9}],
+                // Crossbar
+                [{x: 0.35, y: 0.5}, {x: 0.65, y: 0.5}]
+            ],
+            'B': [
+                // Left vertical
+                [{x: 0.3, y: 0.1}, {x: 0.3, y: 0.9}],
+                // Top curve
+                [{x: 0.3, y: 0.1}, {x: 0.5, y: 0.1}, {x: 0.6, y: 0.2}, {x: 0.6, y: 0.4}, {x: 0.5, y: 0.5}, {x: 0.3, y: 0.5}],
+                // Bottom curve
+                [{x: 0.3, y: 0.5}, {x: 0.5, y: 0.5}, {x: 0.6, y: 0.6}, {x: 0.6, y: 0.8}, {x: 0.5, y: 0.9}, {x: 0.3, y: 0.9}]
+            ],
+            // Add more letters as needed - for now, use a generic path generator
+        };
+
+        // Path following state
+        let letterCheckpoints = []; // Array of checkpoints for current letter
+        let checkpointRadius = 0; // Will be set based on canvas size
+        let passedCheckpoints = new Set(); // Track which checkpoints have been passed
+        let currentCheckpointIndex = 0; // Current checkpoint to reach
 
         // Adjust canvas size for mobile
         function resizeCanvas() {
@@ -251,26 +410,95 @@
             drawLetter();
         }
 
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        // Letters array
-        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-        // Initialize game
-        function init() {
-            nextBtn.disabled = true; // Start with next button disabled
-            drawLetter();
-            updateProgress();
+        // Menu functions
+        function showMenu() {
+            menuScreen.classList.remove('hide');
+            gameScreen.classList.remove('show');
+            updateCharacterGrid();
         }
 
-        // Draw the letter as a dotted outline
+        function showGame() {
+            menuScreen.classList.add('hide');
+            gameScreen.classList.add('show');
+            updateCurrentCharacter(); // Ensure character is set correctly
+            resetLetter();
+        }
+
+        // Get current character set
+        function getCurrentCharacterSet() {
+            return isLetters ? letters : numbers;
+        }
+
+        // Update current character based on index
+        function updateCurrentCharacter() {
+            const charSet = getCurrentCharacterSet();
+            const baseChar = charSet[currentCharacterIndex];
+            currentCharacter = (isUppercase || !isLetters) ? baseChar : baseChar.toLowerCase();
+        }
+
+        function updateCharacterGrid() {
+            characterGrid.innerHTML = '';
+            const characters = getCurrentCharacterSet();
+            
+            for (let i = 0; i < characters.length; i++) {
+                const char = characters[i];
+                const btn = document.createElement('button');
+                btn.className = 'character-btn';
+                btn.textContent = isUppercase || !isLetters ? char : char.toLowerCase();
+                btn.addEventListener('click', () => {
+                    currentCharacterIndex = i;
+                    updateCurrentCharacter();
+                    showGame();
+                });
+                characterGrid.appendChild(btn);
+            }
+        }
+
+        // Menu button handlers
+        lettersBtn.addEventListener('click', () => {
+            isLetters = true;
+            currentCharacterIndex = 0; // Reset to first character
+            lettersBtn.classList.add('active');
+            numbersBtn.classList.remove('active');
+            updateCharacterGrid();
+        });
+
+        numbersBtn.addEventListener('click', () => {
+            isLetters = false;
+            currentCharacterIndex = 0; // Reset to first character
+            numbersBtn.classList.add('active');
+            lettersBtn.classList.remove('active');
+            updateCharacterGrid();
+        });
+
+        uppercaseBtn.addEventListener('click', () => {
+            isUppercase = true;
+            updateCurrentCharacter(); // Update current character to uppercase
+            uppercaseBtn.classList.add('active');
+            lowercaseBtn.classList.remove('active');
+            updateCharacterGrid();
+        });
+
+        lowercaseBtn.addEventListener('click', () => {
+            isUppercase = false;
+            updateCurrentCharacter(); // Update current character to lowercase
+            lowercaseBtn.classList.add('active');
+            uppercaseBtn.classList.remove('active');
+            updateCharacterGrid();
+        });
+
+        backToMenuBtn.addEventListener('click', showMenu);
+
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Initialize with menu
+        showMenu();
+
+        // Draw the letter/number
         function drawLetter() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            const letter = isUppercase 
-                ? letters[currentLetterIndex] 
-                : letters[currentLetterIndex].toLowerCase();
+            const letter = currentCharacter;
             
             // Set up text style
             ctx.font = `bold ${canvasSize * 0.6}px Arial`;
@@ -279,112 +507,44 @@
             
             ctx.save();
             
-            // Create letter on temporary canvas to extract outline
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.font = `bold ${canvasSize * 0.6}px Arial`;
-            tempCtx.textAlign = 'center';
-            tempCtx.textBaseline = 'middle';
-            tempCtx.fillStyle = 'black';
-            tempCtx.fillText(letter, canvas.width / 2, canvas.height / 2);
-            
-            // Get image data to find edge pixels
-            const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-            
-            // Draw dots along the letter outline
-            ctx.fillStyle = '#ff6b9d';
-            const dotRadius = Math.max(5, canvasSize * 0.02);
-            const dotSpacing = Math.max(10, canvasSize * 0.025);
-            const edgePoints = [];
-            
-            // Find edge pixels more efficiently by sampling
-            // Sample every 2-3 pixels for better performance
-            const sampleRate = 2;
-            for (let y = 0; y < canvas.height; y += sampleRate) {
-                for (let x = 0; x < canvas.width; x += sampleRate) {
-                    const index = (y * canvas.width + x) * 4;
-                    const alpha = data[index + 3];
-                    
-                    if (alpha > 128) { // Part of the letter
-                        // Check if it's an edge (has at least one transparent neighbor)
-                        let isEdge = false;
-                        // Check immediate neighbors only for speed
-                        const neighbors = [
-                            [-1, -1], [0, -1], [1, -1],
-                            [-1, 0],           [1, 0],
-                            [-1, 1],  [0, 1],  [1, 1]
-                        ];
-                        
-                        for (const [dx, dy] of neighbors) {
-                            const nx = x + dx;
-                            const ny = y + dy;
-                            if (nx >= 0 && nx < canvas.width && ny >= 0 && ny < canvas.height) {
-                                const nIndex = (ny * canvas.width + nx) * 4;
-                                if (data[nIndex + 3] < 128) {
-                                    isEdge = true;
-                                    break;
-                                }
-                            } else {
-                                isEdge = true; // Edge of canvas
-                                break;
-                            }
-                        }
-                        
-                        if (isEdge) {
-                            edgePoints.push({x, y});
-                        }
-                    }
-                }
-            }
-            
-            // Draw dots at edge points with proper spacing
-            // Sort points to draw in order (rough approximation)
-            edgePoints.sort((a, b) => {
-                // Sort by y first, then x
-                if (Math.abs(a.y - b.y) > 5) return a.y - b.y;
-                return a.x - b.x;
-            });
-            
-            let lastDotX = -dotSpacing * 2;
-            let lastDotY = -dotSpacing * 2;
-            
-            for (const point of edgePoints) {
-                const dist = Math.sqrt(
-                    Math.pow(point.x - lastDotX, 2) + 
-                    Math.pow(point.y - lastDotY, 2)
-                );
-                
-                if (dist >= dotSpacing) {
-                    ctx.beginPath();
-                    ctx.arc(point.x, point.y, dotRadius, 0, Math.PI * 2);
-                    ctx.fill();
-                    lastDotX = point.x;
-                    lastDotY = point.y;
-                }
-            }
+            // Draw a light filled letter as guide (no dots)
+            ctx.fillStyle = 'rgba(255, 107, 157, 0.2)';
+            ctx.fillText(letter, canvas.width / 2, canvas.height / 2);
             
             // Store letter path for collision detection
             storeLetterPath(letter);
             
-            // Draw user's traced path
-            if (tracedPath.length > 0) {
-                // Check if last point is on letter to give visual feedback
-                const lastPoint = tracedPath[tracedPath.length - 1];
+            // Draw all traced strokes separately (so they don't connect)
+            ctx.lineWidth = canvasSize * 0.12; // Thicker brush stroke for better visibility
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Draw completed strokes
+            for (const stroke of tracedStrokes) {
+                if (stroke.length > 0) {
+                    const lastPoint = stroke[stroke.length - 1];
+                    const isOnLetter = isPointOnLetter(lastPoint.x, lastPoint.y);
+                    ctx.strokeStyle = isOnLetter ? '#2ecc71' : '#4ecdc4';
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(stroke[0].x, stroke[0].y);
+                    for (let i = 1; i < stroke.length; i++) {
+                        ctx.lineTo(stroke[i].x, stroke[i].y);
+                    }
+                    ctx.stroke();
+                }
+            }
+            
+            // Draw current stroke being drawn
+            if (currentStroke.length > 0) {
+                const lastPoint = currentStroke[currentStroke.length - 1];
                 const isOnLetter = isPointOnLetter(lastPoint.x, lastPoint.y);
-                
-                // Use brighter color when tracing correctly
                 ctx.strokeStyle = isOnLetter ? '#2ecc71' : '#4ecdc4';
-                ctx.lineWidth = canvasSize * 0.06;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
                 
                 ctx.beginPath();
-                ctx.moveTo(tracedPath[0].x, tracedPath[0].y);
-                for (let i = 1; i < tracedPath.length; i++) {
-                    ctx.lineTo(tracedPath[i].x, tracedPath[i].y);
+                ctx.moveTo(currentStroke[0].x, currentStroke[0].y);
+                for (let i = 1; i < currentStroke.length; i++) {
+                    ctx.lineTo(currentStroke[i].x, currentStroke[i].y);
                 }
                 ctx.stroke();
             }
@@ -452,7 +612,9 @@
             
             isDrawing = true;
             const pos = getEventPos(e);
-            tracedPath = [pos];
+            
+            // Start a new stroke (don't connect to previous strokes)
+            currentStroke = [pos];
             drawLetter();
         }
 
@@ -462,7 +624,7 @@
             if (!isDrawing || isComplete) return;
             
             const pos = getEventPos(e);
-            tracedPath.push(pos);
+            currentStroke.push(pos);
             
             // Check if we're tracing over the letter
             if (isPointOnLetter(pos.x, pos.y)) {
@@ -478,28 +640,167 @@
             if (!isDrawing) return;
             
             isDrawing = false;
+            
+            // Save the current stroke to the strokes array
+            if (currentStroke.length > 0) {
+                tracedStrokes.push([...currentStroke]);
+                currentStroke = [];
+            }
+            
             checkCompletion();
+            drawLetter();
         }
 
-        // Check if tracing is complete
+        // Check if tracing is complete - using region-based detection
         function checkCompletion() {
-            if (isComplete || tracedPath.length < 10) return;
+            if (isComplete || !letterPath) return;
             
-            // Count how many points are on the letter
-            let pointsOnLetter = 0;
-            const sampleSize = Math.min(50, tracedPath.length);
-            const step = Math.max(1, Math.floor(tracedPath.length / sampleSize));
+            // Combine all strokes (completed + current) into one array for checking
+            const allPoints = [];
+            for (const stroke of tracedStrokes) {
+                allPoints.push(...stroke);
+            }
+            allPoints.push(...currentStroke);
             
-            for (let i = 0; i < tracedPath.length; i += step) {
-                if (isPointOnLetter(tracedPath[i].x, tracedPath[i].y)) {
-                    pointsOnLetter++;
+            if (allPoints.length < 80) return; // Require more points to prevent early triggers
+            
+            const data = letterPath.data;
+            
+            // Method: Divide letter into regions and check if each region is covered
+            // This prevents partial tracing from triggering completion
+            
+            // Find letter bounds
+            let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
+            let hasLetter = false;
+            
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const index = (y * canvas.width + x) * 4;
+                    if (index + 3 < data.length && data[index + 3] > 128) {
+                        hasLetter = true;
+                        minX = Math.min(minX, x);
+                        maxX = Math.max(maxX, x);
+                        minY = Math.min(minY, y);
+                        maxY = Math.max(maxY, y);
+                    }
                 }
             }
             
-            // If at least 20% of sampled points are on the letter, consider it complete
-            // This is lenient to accommodate kids' imperfect tracing
-            const coverage = pointsOnLetter / sampleSize;
-            if (coverage >= 0.2) {
+            if (!hasLetter) return;
+            
+            const letterWidth = maxX - minX;
+            const letterHeight = maxY - minY;
+            
+            // Divide letter into 9 regions (3x3 grid)
+            const regions = [];
+            const regionWidth = letterWidth / 3;
+            const regionHeight = letterHeight / 3;
+            
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    regions.push({
+                        minX: minX + col * regionWidth,
+                        maxX: minX + (col + 1) * regionWidth,
+                        minY: minY + row * regionHeight,
+                        maxY: minY + (row + 1) * regionHeight,
+                        totalPixels: 0,
+                        coveredPixels: 0
+                    });
+                }
+            }
+            
+            // Sample traced points
+            const tracedPointsSet = [];
+            const traceSampleStep = Math.max(1, Math.floor(allPoints.length / 150));
+            for (let i = 0; i < allPoints.length; i += traceSampleStep) {
+                tracedPointsSet.push(allPoints[i]);
+            }
+            
+            // Adjust trace radius to match thicker brush stroke (12% of canvas)
+            // Use half the brush width as the detection radius
+            const traceRadius = Math.max(15, canvasSize * 0.06); // Matches brush stroke thickness
+            const sampleRate = 3;
+            
+            // Check each region
+            for (const region of regions) {
+                for (let y = region.minY; y < region.maxY; y += sampleRate) {
+                    for (let x = region.minX; x < region.maxX; x += sampleRate) {
+                        const px = Math.floor(x);
+                        const py = Math.floor(y);
+                        if (px >= 0 && px < canvas.width && py >= 0 && py < canvas.height) {
+                            const index = (py * canvas.width + px) * 4;
+                            if (index + 3 < data.length && data[index + 3] > 128) {
+                                region.totalPixels++;
+                                
+                                // Check if covered
+                                for (const point of tracedPointsSet) {
+                                    const dx = point.x - px;
+                                    const dy = point.y - py;
+                                    const dist = Math.sqrt(dx * dx + dy * dy);
+                                    if (dist <= traceRadius) {
+                                        region.coveredPixels++;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Calculate coverage for each region
+            // Adjusted for thicker brush stroke - need higher coverage per region
+            let regionsWithGoodCoverage = 0;
+            let totalCoverage = 0;
+            const minRegionCoverage = 0.6; // Increased to 60% - thicker brush covers more easily
+            
+            for (const region of regions) {
+                if (region.totalPixels > 0) {
+                    const regionCoverage = region.coveredPixels / region.totalPixels;
+                    totalCoverage += regionCoverage;
+                    if (regionCoverage >= minRegionCoverage) {
+                        regionsWithGoodCoverage++;
+                    }
+                }
+            }
+            
+            const avgCoverage = totalCoverage / regions.length;
+            const regionCoverageRatio = regionsWithGoodCoverage / regions.length;
+            
+            // Calculate path length
+            let pathLength = 0;
+            for (const stroke of tracedStrokes) {
+                for (let i = 1; i < stroke.length; i++) {
+                    const dx = stroke[i].x - stroke[i-1].x;
+                    const dy = stroke[i].y - stroke[i-1].y;
+                    pathLength += Math.sqrt(dx * dx + dy * dy);
+                }
+            }
+            for (let i = 1; i < currentStroke.length; i++) {
+                const dx = currentStroke[i].x - currentStroke[i-1].x;
+                const dy = currentStroke[i].y - currentStroke[i-1].y;
+                pathLength += Math.sqrt(dx * dx + dy * dy);
+            }
+            
+            // Adjusted path length requirement for thicker brush
+            const minPathLength = canvasSize * 0.25; // Slightly lower since thicker brush covers more
+            
+            // Debug info
+            console.log('Regions covered:', regionsWithGoodCoverage + '/9',
+                       'Region coverage ratio:', (regionCoverageRatio * 100).toFixed(1) + '%',
+                       'Avg coverage:', (avgCoverage * 100).toFixed(1) + '%',
+                       'Path length:', pathLength.toFixed(0),
+                       'Min path:', minPathLength.toFixed(0),
+                       'Brush width:', (canvasSize * 0.12).toFixed(0) + 'px');
+            
+            // Complete only if:
+            // 1. At least 7 out of 9 regions have good coverage (stricter for thicker brush)
+            // 2. Average coverage is high (75%+) - thicker brush should achieve this easily
+            // 3. Path length is sufficient
+            // Adjusted thresholds to account for thicker brush covering more area
+            if (regionsWithGoodCoverage >= 7 && 
+                avgCoverage >= 0.75 && 
+                pathLength >= minPathLength) {
                 completeTracing();
             }
         }
@@ -517,7 +818,12 @@
                 successMessage.classList.remove('show');
             }, 2000);
             
-            // Enable next button
+            // Automatically move to next letter after delay
+            setTimeout(() => {
+                nextLetter();
+            }, 2500); // 2.5 seconds - allows time to see the success message
+            
+            // Enable next button (user can still click it manually if they want)
             nextBtn.disabled = false;
         }
 
@@ -549,37 +855,29 @@
 
         // Update progress bar
         function updateProgress() {
-            const progress = ((currentLetterIndex + 1) / 26) * 100;
-            progressBar.style.width = progress + '%';
-            currentLetterSpan.textContent = letters[currentLetterIndex];
+            currentLetterSpan.textContent = currentCharacter;
         }
 
         // Reset current letter
         function resetLetter() {
-            tracedPath = [];
+            tracedStrokes = [];
+            currentStroke = [];
             isComplete = false;
             isDrawing = false;
             nextBtn.disabled = true;
             successMessage.classList.remove('show');
-            drawLetter();
-        }
-
-        // Move to next letter
-        function nextLetter() {
-            if (currentLetterIndex < 25) {
-                currentLetterIndex++;
-            } else {
-                // Completed all letters - restart
-                currentLetterIndex = 0;
-            }
-            resetLetter();
             updateProgress();
+            if (gameScreen.classList.contains('show')) {
+                resizeCanvas();
+            }
         }
 
-        // Toggle uppercase/lowercase
-        function toggleCase() {
-            isUppercase = !isUppercase;
-            caseToggle.textContent = isUppercase ? 'Uppercase' : 'Lowercase';
+        // Move to next character (cycle through)
+        function nextLetter() {
+            const charSet = getCurrentCharacterSet();
+            // Move to next index, wrap around to 0 if at the end
+            currentCharacterIndex = (currentCharacterIndex + 1) % charSet.length;
+            updateCurrentCharacter();
             resetLetter();
         }
 
@@ -596,10 +894,7 @@
 
         resetBtn.addEventListener('click', resetLetter);
         nextBtn.addEventListener('click', nextLetter);
-        caseToggle.addEventListener('click', toggleCase);
-
-        // Initialize the game
-        init();
     </script>
 </body>
 </html>
+
