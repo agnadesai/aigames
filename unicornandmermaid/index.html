@@ -525,9 +525,11 @@
             ctx.beginPath();
             ctx.ellipse(centerX - 18, centerY + 28, 5, 3, 0.4, 0, Math.PI * 2);
             ctx.fill();
+
             ctx.beginPath();
             ctx.ellipse(centerX - 2, centerY + 36, 5, 3, -0.2, 0, Math.PI * 2);
             ctx.fill();
+
             ctx.beginPath();
             ctx.ellipse(centerX + 8, centerY + 36, 5, 3, 0.2, 0, Math.PI * 2);
             ctx.fill();
@@ -549,182 +551,181 @@
             ctx.restore();
         }
 
-        // Draw mermaid figure (matching the attached image style, smaller size)
+        // Draw mermaid figure (matching the attached image style)
         function drawMermaid(x, y) {
             const centerX = x + player.width / 2;
             const centerY = y + player.height / 2;
-            const scale = 0.65; // Scale factor to make mermaid smaller (65% of original size)
             
             // Save context for transformations
             ctx.save();
             
-            // Draw head (medium-brown skin tone) - scaled down
+            // Draw head (medium-brown skin tone)
             ctx.fillStyle = '#8B6F47'; // Medium brown
             ctx.beginPath();
-            ctx.ellipse(centerX, centerY - 12, 14 * scale, 16 * scale, 0, 0, Math.PI * 2);
+            ctx.ellipse(centerX, centerY - 20, 14, 16, 0, 0, Math.PI * 2);
             ctx.fill();
             
-            // Draw hair (light pastel blue, long and flowing) - scaled down
+            // Draw hair (light pastel blue, long and flowing)
             ctx.fillStyle = '#B0E0E6'; // Light pastel blue
             ctx.beginPath();
             // Left side of hair
-            ctx.moveTo(centerX - 12 * scale, centerY - 15 * scale);
-            ctx.quadraticCurveTo(centerX - 18 * scale, centerY - 18 * scale, centerX - 15 * scale, centerY - 21 * scale);
-            ctx.quadraticCurveTo(centerX - 20 * scale, centerY - 23 * scale, centerX - 16 * scale, centerY - 25 * scale);
-            ctx.quadraticCurveTo(centerX - 14 * scale, centerY - 24 * scale, centerX - 12 * scale, centerY - 21 * scale);
-            ctx.quadraticCurveTo(centerX - 10 * scale, centerY - 19 * scale, centerX - 12 * scale, centerY - 17 * scale);
+            ctx.moveTo(centerX - 12, centerY - 25);
+            ctx.quadraticCurveTo(centerX - 18, centerY - 30, centerX - 15, centerY - 35);
+            ctx.quadraticCurveTo(centerX - 20, centerY - 38, centerX - 16, centerY - 42);
+            ctx.quadraticCurveTo(centerX - 14, centerY - 40, centerX - 12, centerY - 36);
+            ctx.quadraticCurveTo(centerX - 10, centerY - 32, centerX - 12, centerY - 28);
             ctx.closePath();
             ctx.fill();
             
             // Right side of hair
             ctx.beginPath();
-            ctx.moveTo(centerX + 12 * scale, centerY - 15 * scale);
-            ctx.quadraticCurveTo(centerX + 18 * scale, centerY - 18 * scale, centerX + 15 * scale, centerY - 21 * scale);
-            ctx.quadraticCurveTo(centerX + 20 * scale, centerY - 23 * scale, centerX + 16 * scale, centerY - 25 * scale);
-            ctx.quadraticCurveTo(centerX + 14 * scale, centerY - 24 * scale, centerX + 12 * scale, centerY - 21 * scale);
-            ctx.quadraticCurveTo(centerX + 10 * scale, centerY - 19 * scale, centerX + 12 * scale, centerY - 17 * scale);
+            ctx.moveTo(centerX + 12, centerY - 25);
+            ctx.quadraticCurveTo(centerX + 18, centerY - 30, centerX + 15, centerY - 35);
+            ctx.quadraticCurveTo(centerX + 20, centerY - 38, centerX + 16, centerY - 42);
+            ctx.quadraticCurveTo(centerX + 14, centerY - 40, centerX + 12, centerY - 36);
+            ctx.quadraticCurveTo(centerX + 10, centerY - 32, centerX + 12, centerY - 28);
             ctx.closePath();
             ctx.fill();
             
-            // Hair flowing down to shoulders - scaled down
+            // Hair flowing down to shoulders
             ctx.beginPath();
-            ctx.moveTo(centerX - 8 * scale, centerY - 9 * scale);
-            ctx.quadraticCurveTo(centerX - 12 * scale, centerY - 6 * scale, centerX - 10 * scale, centerY - 3 * scale);
-            ctx.quadraticCurveTo(centerX - 8 * scale, centerY - 1 * scale, centerX - 6 * scale, centerY - 5 * scale);
-            ctx.quadraticCurveTo(centerX - 4 * scale, centerY - 7 * scale, centerX - 6 * scale, centerY - 11 * scale);
+            ctx.moveTo(centerX - 8, centerY - 15);
+            ctx.quadraticCurveTo(centerX - 12, centerY - 10, centerX - 10, centerY - 5);
+            ctx.quadraticCurveTo(centerX - 8, centerY - 2, centerX - 6, centerY - 8);
+            ctx.quadraticCurveTo(centerX - 4, centerY - 12, centerX - 6, centerY - 18);
             ctx.closePath();
             ctx.fill();
             
             ctx.beginPath();
-            ctx.moveTo(centerX + 8 * scale, centerY - 9 * scale);
-            ctx.quadraticCurveTo(centerX + 12 * scale, centerY - 6 * scale, centerX + 10 * scale, centerY - 3 * scale);
-            ctx.quadraticCurveTo(centerX + 8 * scale, centerY - 1 * scale, centerX + 6 * scale, centerY - 5 * scale);
-            ctx.quadraticCurveTo(centerX + 4 * scale, centerY - 7 * scale, centerX + 6 * scale, centerY - 11 * scale);
+            ctx.moveTo(centerX + 8, centerY - 15);
+            ctx.quadraticCurveTo(centerX + 12, centerY - 10, centerX + 10, centerY - 5);
+            ctx.quadraticCurveTo(centerX + 8, centerY - 2, centerX + 6, centerY - 8);
+            ctx.quadraticCurveTo(centerX + 4, centerY - 12, centerX + 6, centerY - 18);
             ctx.closePath();
             ctx.fill();
             
-            // Draw torso (medium-brown skin) - scaled down
+            // Draw torso (medium-brown skin)
             ctx.fillStyle = '#8B6F47';
             ctx.beginPath();
-            ctx.ellipse(centerX, centerY + 1, 16 * scale, 18 * scale, 0, 0, Math.PI * 2);
+            ctx.ellipse(centerX, centerY + 2, 16, 18, 0, 0, Math.PI * 2);
             ctx.fill();
             
-            // Draw purple strapless top (bra-like with two rounded cup shapes) - scaled down
+            // Draw purple strapless top (bra-like with two rounded cup shapes)
             ctx.fillStyle = '#9370DB'; // Medium purple
             ctx.beginPath();
             // Left cup
-            ctx.ellipse(centerX - 6 * scale, centerY - 1, 7 * scale, 8 * scale, 0, 0, Math.PI * 2);
+            ctx.ellipse(centerX - 6, centerY - 2, 7, 8, 0, 0, Math.PI * 2);
             ctx.fill();
             // Right cup
             ctx.beginPath();
-            ctx.ellipse(centerX + 6 * scale, centerY - 1, 7 * scale, 8 * scale, 0, 0, Math.PI * 2);
+            ctx.ellipse(centerX + 6, centerY - 2, 7, 8, 0, 0, Math.PI * 2);
             ctx.fill();
             
-            // Draw arms raised upwards and outwards (bent at elbows) - scaled down
+            // Draw arms raised upwards and outwards (bent at elbows)
             ctx.fillStyle = '#8B6F47';
             // Left arm
             ctx.beginPath();
-            ctx.ellipse(centerX - 18 * scale, centerY - 5 * scale, 5 * scale, 12 * scale, -0.5, 0, Math.PI * 2);
+            ctx.ellipse(centerX - 18, centerY - 8, 5, 12, -0.5, 0, Math.PI * 2);
             ctx.fill();
             // Left hand (open, fingers spread)
             ctx.beginPath();
-            ctx.ellipse(centerX - 22 * scale, centerY - 11 * scale, 4 * scale, 3 * scale, -0.5, 0, Math.PI * 2);
+            ctx.ellipse(centerX - 22, centerY - 18, 4, 3, -0.5, 0, Math.PI * 2);
             ctx.fill();
             
             // Right arm
             ctx.beginPath();
-            ctx.ellipse(centerX + 18 * scale, centerY - 5 * scale, 5 * scale, 12 * scale, 0.5, 0, Math.PI * 2);
+            ctx.ellipse(centerX + 18, centerY - 8, 5, 12, 0.5, 0, Math.PI * 2);
             ctx.fill();
             // Right hand (open, fingers spread)
             ctx.beginPath();
-            ctx.ellipse(centerX + 22 * scale, centerY - 11 * scale, 4 * scale, 3 * scale, 0.5, 0, Math.PI * 2);
+            ctx.ellipse(centerX + 22, centerY - 18, 4, 3, 0.5, 0, Math.PI * 2);
             ctx.fill();
             
-            // Draw tail (deep rich blue, curving to the left) - MUCH SHORTER
+            // Draw tail (deep rich blue, curving to the left)
             ctx.fillStyle = '#00008B'; // Deep rich blue
             ctx.beginPath();
-            // Tail body (curving, shortened)
-            ctx.moveTo(centerX - 2 * scale, centerY + 11 * scale);
-            ctx.quadraticCurveTo(centerX - 8 * scale, centerY + 16 * scale, centerX - 12 * scale, centerY + 22 * scale);
-            ctx.quadraticCurveTo(centerX - 15 * scale, centerY + 28 * scale, centerX - 18 * scale, centerY + 34 * scale);
-            ctx.lineTo(centerX + 2 * scale, centerY + 34 * scale);
-            ctx.quadraticCurveTo(centerX - 2 * scale, centerY + 28 * scale, centerX + 2 * scale, centerY + 22 * scale);
-            ctx.quadraticCurveTo(centerX + 4 * scale, centerY + 16 * scale, centerX + 2 * scale, centerY + 11 * scale);
+            // Tail body (curving)
+            ctx.moveTo(centerX - 2, centerY + 18);
+            ctx.quadraticCurveTo(centerX - 8, centerY + 25, centerX - 12, centerY + 35);
+            ctx.quadraticCurveTo(centerX - 15, centerY + 45, centerX - 18, centerY + 55);
+            ctx.lineTo(centerX + 2, centerY + 55);
+            ctx.quadraticCurveTo(centerX - 2, centerY + 45, centerX + 2, centerY + 35);
+            ctx.quadraticCurveTo(centerX + 4, centerY + 25, centerX + 2, centerY + 18);
             ctx.closePath();
             ctx.fill();
             
-            // Draw scale pattern on tail (overlapping semi-circular lines) - scaled down
+            // Draw scale pattern on tail (overlapping semi-circular lines)
             ctx.strokeStyle = '#0000CD'; // Slightly lighter blue for scales
-            ctx.lineWidth = 1.5 * scale;
-            for (let i = 0; i < 3; i++) {
-                const scaleY = centerY + 15 + (i * 6 * scale);
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 4; i++) {
+                const scaleY = centerY + 25 + (i * 8);
                 ctx.beginPath();
-                ctx.arc(centerX - 8 * scale, scaleY, 6 * scale, 0, Math.PI);
+                ctx.arc(centerX - 8, scaleY, 6, 0, Math.PI);
                 ctx.stroke();
                 ctx.beginPath();
-                ctx.arc(centerX - 2 * scale, scaleY + 3 * scale, 6 * scale, 0, Math.PI);
+                ctx.arc(centerX - 2, scaleY + 4, 6, 0, Math.PI);
                 ctx.stroke();
                 ctx.beginPath();
-                ctx.arc(centerX + 4 * scale, scaleY, 6 * scale, 0, Math.PI);
+                ctx.arc(centerX + 4, scaleY, 6, 0, Math.PI);
                 ctx.stroke();
             }
             
-            // Draw tail fin (fluke) in pastel purple with wavy/scalloped edge - scaled down and shorter
+            // Draw large tail fin (fluke) in pastel purple with wavy/scalloped edge
             ctx.fillStyle = '#DDA0DD'; // Pastel purple (matching top)
             ctx.beginPath();
-            ctx.moveTo(centerX - 18 * scale, centerY + 34 * scale);
-            ctx.quadraticCurveTo(centerX - 25 * scale, centerY + 37 * scale, centerX - 22 * scale, centerY + 40 * scale);
-            ctx.quadraticCurveTo(centerX - 20 * scale, centerY + 42 * scale, centerX - 15 * scale, centerY + 41 * scale);
-            ctx.quadraticCurveTo(centerX - 10 * scale, centerY + 40 * scale, centerX - 8 * scale, centerY + 37 * scale);
-            ctx.quadraticCurveTo(centerX - 5 * scale, centerY + 35 * scale, centerX, centerY + 37 * scale);
-            ctx.quadraticCurveTo(centerX + 5 * scale, centerY + 35 * scale, centerX + 8 * scale, centerY + 37 * scale);
-            ctx.quadraticCurveTo(centerX + 10 * scale, centerY + 40 * scale, centerX + 15 * scale, centerY + 41 * scale);
-            ctx.quadraticCurveTo(centerX + 20 * scale, centerY + 42 * scale, centerX + 22 * scale, centerY + 40 * scale);
-            ctx.quadraticCurveTo(centerX + 25 * scale, centerY + 37 * scale, centerX + 18 * scale, centerY + 34 * scale);
+            ctx.moveTo(centerX - 18, centerY + 55);
+            ctx.quadraticCurveTo(centerX - 25, centerY + 60, centerX - 22, centerY + 65);
+            ctx.quadraticCurveTo(centerX - 20, centerY + 68, centerX - 15, centerY + 66);
+            ctx.quadraticCurveTo(centerX - 10, centerY + 64, centerX - 8, centerY + 60);
+            ctx.quadraticCurveTo(centerX - 5, centerY + 58, centerX, centerY + 60);
+            ctx.quadraticCurveTo(centerX + 5, centerY + 58, centerX + 8, centerY + 60);
+            ctx.quadraticCurveTo(centerX + 10, centerY + 64, centerX + 15, centerY + 66);
+            ctx.quadraticCurveTo(centerX + 20, centerY + 68, centerX + 22, centerY + 65);
+            ctx.quadraticCurveTo(centerX + 25, centerY + 60, centerX + 18, centerY + 55);
             ctx.closePath();
             ctx.fill();
             
-            // Draw large round dark brown eyes with white highlights - scaled down
+            // Draw large round dark brown eyes with white highlights
             ctx.fillStyle = '#654321'; // Dark brown
             ctx.beginPath();
-            ctx.arc(centerX - 5 * scale, centerY - 13 * scale, 4 * scale, 0, Math.PI * 2);
+            ctx.arc(centerX - 5, centerY - 22, 4, 0, Math.PI * 2);
             ctx.fill();
             ctx.beginPath();
-            ctx.arc(centerX + 5 * scale, centerY - 13 * scale, 4 * scale, 0, Math.PI * 2);
+            ctx.arc(centerX + 5, centerY - 22, 4, 0, Math.PI * 2);
             ctx.fill();
             
             // White highlights in eyes
             ctx.fillStyle = '#FFFFFF';
             ctx.beginPath();
-            ctx.arc(centerX - 4 * scale, centerY - 14 * scale, 1.5 * scale, 0, Math.PI * 2);
+            ctx.arc(centerX - 4, centerY - 23, 1.5, 0, Math.PI * 2);
             ctx.fill();
             ctx.beginPath();
-            ctx.arc(centerX + 6 * scale, centerY - 14 * scale, 1.5 * scale, 0, Math.PI * 2);
+            ctx.arc(centerX + 6, centerY - 23, 1.5, 0, Math.PI * 2);
             ctx.fill();
             
-            // Draw thin dark brown eyebrows - scaled down
+            // Draw thin dark brown eyebrows
             ctx.strokeStyle = '#654321';
-            ctx.lineWidth = 2 * scale;
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(centerX - 8 * scale, centerY - 16 * scale);
-            ctx.lineTo(centerX - 2 * scale, centerY - 15 * scale);
+            ctx.moveTo(centerX - 8, centerY - 26);
+            ctx.lineTo(centerX - 2, centerY - 25);
             ctx.stroke();
             ctx.beginPath();
-            ctx.moveTo(centerX + 2 * scale, centerY - 15 * scale);
-            ctx.lineTo(centerX + 8 * scale, centerY - 16 * scale);
+            ctx.moveTo(centerX + 2, centerY - 25);
+            ctx.lineTo(centerX + 8, centerY - 26);
             ctx.stroke();
             
-            // Draw small gentle smile (light pink) - scaled down
+            // Draw small gentle smile (light pink)
             ctx.strokeStyle = '#FFB6C1'; // Light pink
-            ctx.lineWidth = 2 * scale;
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.arc(centerX, centerY - 10 * scale, 4 * scale, 0, Math.PI);
+            ctx.arc(centerX, centerY - 16, 4, 0, Math.PI);
             ctx.stroke();
             
-            // Draw tiny simple dot nose - scaled down
+            // Draw tiny simple dot nose
             ctx.fillStyle = '#654321';
             ctx.beginPath();
-            ctx.arc(centerX, centerY - 12 * scale, 1 * scale, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY - 20, 1, 0, Math.PI * 2);
             ctx.fill();
             
             ctx.restore();
@@ -872,4 +873,6 @@
         draw();
     </script>
 </body>
+</html>
+
 </html>

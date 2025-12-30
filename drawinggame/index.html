@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 Drawing Game</h1>
+            <p>Draw and color freely!</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="toolbar">
+                    <div class="tool-group">
+                        <label for="colorPicker">Color:</label>
+                        <input type="color" id="colorPicker" value="#000000">
+                    </div>
+                    
+                    <div class="tool-group">
+                        <label for="brushSize">Brush Size:</label>
+                        <input type="range" id="brushSize" min="1" max="50" value="5">
+                        <span id="brushSizeValue">5</span>
+                    </div>
+                    
+                    <div class="tool-group">
+                        <button id="drawBtn" class="tool-btn active">✏️ Draw</button>
+                        <button id="eraseBtn" class="tool-btn">🧹 Erase</button>
+                    </div>
+                    
+                    <div class="tool-group">
+                        <button id="clearBtn" class="tool-btn danger">🗑️ Clear</button>
+                        <button id="saveBtn" class="tool-btn success">💾 Save</button>
+                    </div>
+                </div>
+                
+                <div class="color-palette">
+                    <div class="color-swatch" data-color="#000000" style="background-color: #000000;"></div>
+                    <div class="color-swatch" data-color="#FF0000" style="background-color: #FF0000;"></div>
+                    <div class="color-swatch" data-color="#00FF00" style="background-color: #00FF00;"></div>
+                    <div class="color-swatch" data-color="#0000FF" style="background-color: #0000FF;"></div>
+                    <div class="color-swatch" data-color="#FFFF00" style="background-color: #FFFF00;"></div>
+                    <div class="color-swatch" data-color="#FF00FF" style="background-color: #FF00FF;"></div>
+                    <div class="color-swatch" data-color="#00FFFF" style="background-color: #00FFFF;"></div>
+                    <div class="color-swatch" data-color="#FFA500" style="background-color: #FFA500;"></div>
+                    <div class="color-swatch" data-color="#800080" style="background-color: #800080;"></div>
+                    <div class="color-swatch" data-color="#FFC0CB" style="background-color: #FFC0CB;"></div>
+                    <div class="color-swatch" data-color="#FFFFFF" style="background-color: #FFFFFF; border: 1px solid #ccc;"></div>
+                </div>
+            </div>
+            
+            <div class="canvas-container">
+                <canvas id="drawingCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
+
