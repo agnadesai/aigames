@@ -46,6 +46,8 @@
             border-radius: 20px;
             padding: 10px;
             position: relative;
+            width: 100%;
+            height: 50px;
         }
 
         .progress-bar {
@@ -59,6 +61,8 @@
             color: white;
             font-weight: bold;
             font-size: 1.1em;
+            width: 3.85%; /* Start at 1/26 */
+            min-width: 120px;
         }
 
         .canvas-container {
@@ -255,6 +259,7 @@
 
         // Initialize game
         function init() {
+            nextBtn.disabled = true; // Start with next button disabled
             drawLetter();
             updateProgress();
         }
@@ -272,38 +277,106 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            // Create path for the letter
-            letterPath = [];
             ctx.save();
             
-            // Draw letter outline using stroke
-            ctx.strokeStyle = '#ff6b9d';
-            ctx.lineWidth = canvasSize * 0.08;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
+            // Create letter on temporary canvas to extract outline
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.font = `bold ${canvasSize * 0.6}px Arial`;
+            tempCtx.textAlign = 'center';
+            tempCtx.textBaseline = 'middle';
+            tempCtx.fillStyle = 'black';
+            tempCtx.fillText(letter, canvas.width / 2, canvas.height / 2);
             
-            // Create a path for the letter
-            const path = new Path2D();
-            path.addText(letter, {
-                x: canvas.width / 2,
-                y: canvas.height / 2,
-                font: `bold ${canvasSize * 0.6}px Arial`,
-                textAlign: 'center',
-                textBaseline: 'middle'
+            // Get image data to find edge pixels
+            const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            // Draw dots along the letter outline
+            ctx.fillStyle = '#ff6b9d';
+            const dotRadius = Math.max(5, canvasSize * 0.02);
+            const dotSpacing = Math.max(10, canvasSize * 0.025);
+            const edgePoints = [];
+            
+            // Find edge pixels more efficiently by sampling
+            // Sample every 2-3 pixels for better performance
+            const sampleRate = 2;
+            for (let y = 0; y < canvas.height; y += sampleRate) {
+                for (let x = 0; x < canvas.width; x += sampleRate) {
+                    const index = (y * canvas.width + x) * 4;
+                    const alpha = data[index + 3];
+                    
+                    if (alpha > 128) { // Part of the letter
+                        // Check if it's an edge (has at least one transparent neighbor)
+                        let isEdge = false;
+                        // Check immediate neighbors only for speed
+                        const neighbors = [
+                            [-1, -1], [0, -1], [1, -1],
+                            [-1, 0],           [1, 0],
+                            [-1, 1],  [0, 1],  [1, 1]
+                        ];
+                        
+                        for (const [dx, dy] of neighbors) {
+                            const nx = x + dx;
+                            const ny = y + dy;
+                            if (nx >= 0 && nx < canvas.width && ny >= 0 && ny < canvas.height) {
+                                const nIndex = (ny * canvas.width + nx) * 4;
+                                if (data[nIndex + 3] < 128) {
+                                    isEdge = true;
+                                    break;
+                                }
+                            } else {
+                                isEdge = true; // Edge of canvas
+                                break;
+                            }
+                        }
+                        
+                        if (isEdge) {
+                            edgePoints.push({x, y});
+                        }
+                    }
+                }
+            }
+            
+            // Draw dots at edge points with proper spacing
+            // Sort points to draw in order (rough approximation)
+            edgePoints.sort((a, b) => {
+                // Sort by y first, then x
+                if (Math.abs(a.y - b.y) > 5) return a.y - b.y;
+                return a.x - b.x;
             });
             
-            // Draw as dotted line
-            ctx.setLineDash([canvasSize * 0.02, canvasSize * 0.02]);
-            ctx.stroke(path);
-            ctx.setLineDash([]);
+            let lastDotX = -dotSpacing * 2;
+            let lastDotY = -dotSpacing * 2;
+            
+            for (const point of edgePoints) {
+                const dist = Math.sqrt(
+                    Math.pow(point.x - lastDotX, 2) + 
+                    Math.pow(point.y - lastDotY, 2)
+                );
+                
+                if (dist >= dotSpacing) {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, dotRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                    lastDotX = point.x;
+                    lastDotY = point.y;
+                }
+            }
             
             // Store letter path for collision detection
-            // We'll use a simpler approach: create an image data for the letter
             storeLetterPath(letter);
             
             // Draw user's traced path
             if (tracedPath.length > 0) {
-                ctx.strokeStyle = '#4ecdc4';
+                // Check if last point is on letter to give visual feedback
+                const lastPoint = tracedPath[tracedPath.length - 1];
+                const isOnLetter = isPointOnLetter(lastPoint.x, lastPoint.y);
+                
+                // Use brighter color when tracing correctly
+                ctx.strokeStyle = isOnLetter ? '#2ecc71' : '#4ecdc4';
                 ctx.lineWidth = canvasSize * 0.06;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
@@ -415,7 +488,7 @@
             // Count how many points are on the letter
             let pointsOnLetter = 0;
             const sampleSize = Math.min(50, tracedPath.length);
-            const step = Math.floor(tracedPath.length / sampleSize);
+            const step = Math.max(1, Math.floor(tracedPath.length / sampleSize));
             
             for (let i = 0; i < tracedPath.length; i += step) {
                 if (isPointOnLetter(tracedPath[i].x, tracedPath[i].y)) {
@@ -423,9 +496,10 @@
                 }
             }
             
-            // If at least 30% of sampled points are on the letter, consider it complete
+            // If at least 20% of sampled points are on the letter, consider it complete
+            // This is lenient to accommodate kids' imperfect tracing
             const coverage = pointsOnLetter / sampleSize;
-            if (coverage >= 0.3) {
+            if (coverage >= 0.2) {
                 completeTracing();
             }
         }
