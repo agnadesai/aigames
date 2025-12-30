@@ -246,6 +246,7 @@
                 <li><a href="catsanddogs/index.html">Cats and Dogs</a></li>
                 <li><a href="unicornandmermaid/index.html">Unicorn and Mermaid</a></li>
                 <li><a href="escaperoom/escape-room.html">Escape Room</a></li>
+                <li><a href="drawinggame/index.html">Drawing Game</a></li>
                 <li><a href="contact.html">Contact Us</a></li>
             </ul>
             <div class="menu-toggle" id="menuToggle">
@@ -266,7 +267,12 @@
         <div class="contact-form">
             <div id="message" class="message"></div>
             
-            <form id="contactForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+            <form id="contactForm" action="https://formsubmit.co/agna.desai@gmail.com" method="POST">
+                <input type="hidden" name="_captcha" value="false">
+                <input type="hidden" name="_subject" value="New message from AI Games website">
+                <input type="hidden" name="_template" value="box">
+                <input type="hidden" name="_next" value="">
+                
                 <div class="form-group">
                     <label for="name">Your Name</label>
                     <input type="text" id="name" name="name" required>
@@ -337,11 +343,13 @@
                     messageDiv.textContent = 'Thank you! Your message has been sent successfully.';
                     contactForm.reset();
                 } else {
-                    throw new Error('Form submission failed');
+                    const data = await response.json();
+                    throw new Error(data.error || 'Form submission failed');
                 }
             } catch (error) {
                 messageDiv.className = 'message error';
                 messageDiv.textContent = 'Oops! There was a problem sending your message. Please try again later.';
+                console.error('Form error:', error);
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Send Message';
