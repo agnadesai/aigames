@@ -283,7 +283,6 @@
             font-size: 50px;
             text-align: center;
             line-height: 60px;
-            transition: transform 0.1s;
             z-index: 1000 !important;
             display: block !important;
             visibility: visible !important;
@@ -293,6 +292,8 @@
             border: 4px solid #ff1493 !important;
             border-radius: 12px;
             box-shadow: 0 0 20px rgba(255,20,147,1) !important;
+            will-change: transform;
+            transform-origin: center center;
         }
 
         .opponent {
@@ -552,17 +553,15 @@
         let countdownValue = 3;
         let gameTime = 0;
         let gameTimer = null;
-        let playerSpeed = 2; // Start with minimum speed (reduced for longer game)
-        let playerX = 500; // Center of road
-        let playerY = 600; // Bottom of screen (fixed position)
+        let playerSpeed = 3; // Player's forward speed
+        let playerX = 500; // Player's horizontal position
+        let playerY = 0; // Player's progress (starts at 0, moves up toward finish)
         let playerProgress = 0; // How far player has traveled
-        let roadSpeed = 0;
-        let treats = []; // Collectible treats on the road
-        let score = 0; // Score for collecting treats
-        let finishLineY = -15000; // Distance for exactly 1 minute race
+        let opponents = []; // Array of opponent racers
         let raceFinished = false;
         let keys = {};
-        let raceDistance = 5000; // Total race distance
+        let raceDistance = 5000; // Total race distance in pixels
+        let finishLineY = 0; // Finish line at top (Y = 0)
 
         // Character emoji mapping
         const characterEmojis = {
@@ -629,94 +628,103 @@
 
         // Initialize Game
         function initGame() {
+            // Reset cache
+            containerCache = null;
+            updateBounds();
+            
             gameTime = 0;
-            playerSpeed = 2; // Start with minimum speed (reduced for longer game)
-            // Position player at bottom center of screen
-            // raceTrack is 1000px wide x 700px tall
-            // Center X: 500px (center of 1000px)
-            // Bottom Y: 650px (near bottom, leaving 50px margin)
-            playerX = 500; // Center horizontally
-            playerY = 650; // Near bottom vertically
-            roadSpeed = 0;
-            treats = [];
-            score = 0;
-            finishLineY = -15000; // Distance for exactly 1 minute race
+            playerSpeed = 3;
             raceFinished = false;
             
-            // Ensure player has emoji content FIRST
-            const emoji = characterEmojis[selectedCharacter] || '🐱';
-            // Set both textContent and innerHTML to ensure emoji renders
-            player.textContent = '';
-            player.innerHTML = '';
-            // Force a reflow
-            void player.offsetHeight;
-            player.textContent = emoji;
-            player.innerHTML = '<span style="font-size: 50px; display: block;">' + emoji + '</span>';
-            
-            // Fallback: if emoji doesn't show, add a visible indicator
-            if (!player.textContent || player.textContent.trim() === '') {
-                player.innerHTML = '<div style="width:100%;height:100%;background:#ff1493;border-radius:10px;"></div>';
-            }
-            
-            // Get container dimensions for responsive positioning
+            // Get container dimensions
             const gameContainerEl = document.getElementById('gameContainer');
             const containerWidth = gameContainerEl.offsetWidth;
             const containerHeight = gameContainerEl.offsetHeight;
             
-            // Position player at bottom center - use percentage-based positioning
-            // Center horizontally: 50% - 30px (half of 60px player width)
-            // Bottom vertically: 90% from top (leaving 10% margin at bottom)
-            const centerX = containerWidth / 2;
-            const bottomY = containerHeight * 0.9;
+            // Position player at bottom center
+            playerX = containerWidth / 2;
+            playerY = containerHeight - 80; // Start near bottom
+            playerProgress = 0;
             
-            playerX = centerX;
-            playerY = bottomY;
+            // Set player emoji
+            const emoji = characterEmojis[selectedCharacter] || '🐱';
+            player.textContent = emoji;
+            player.innerHTML = emoji;
             
+            // Position player visually
+            const leftPos = playerX - 30;
+            const topPos = playerY - 30;
+            player.style.transform = `translate3d(${leftPos}px, ${topPos}px, 0)`;
+            player.style.display = 'block';
+            player.style.visibility = 'visible';
+            player.style.opacity = '1';
             
-            const leftPos = centerX - 30; // Center the 60px player
-            const topPos = bottomY - 30;  // Position from top
+            // Create opponents (5 AI racers)
+            createOpponents();
             
-            // Force all styles explicitly with !important values
-            player.style.cssText = `
-                left: ${leftPos}px !important;
-                top: ${topPos}px !important;
-                width: 60px !important;
-                height: 60px !important;
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                z-index: 1000 !important;
-                position: absolute !important;
-                background-color: rgba(255,255,255,0.95) !important;
-                border: 4px solid #ff1493 !important;
-                border-radius: 12px !important;
-                font-size: 50px !important;
-                text-align: center !important;
-                line-height: 60px !important;
-                box-shadow: 0 0 20px rgba(255,20,147,1) !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            `;
-            
-            // Create road lines (disabled - using static dotted line instead)
-            // createRoadLines();
-            
-            // Create treats on the road
-            createTreats();
-            
-            // Position finish line far ahead (not visible at start)
-            // Finish line distance calculated for exactly 1 minute race
-            // Game runs at ~60 FPS, player speed 2-6 (average ~3.5)
-            // At average speed 3.5: 3.5 pixels/frame * 60 FPS * 60 seconds = 12,600 pixels
-            // Plus player Y position (~650): 12,600 + 650 = 13,250
-            // Using 15,000 to account for speed variations and ensure ~60 seconds
-            finishLineY = -15000; // Distance for exactly 1 minute race
-            finishLine.style.transform = `translateY(${finishLineY}px)`;
+            // Position finish line at top
+            finishLineY = 50; // Finish line at top of screen
+            finishLine.style.transform = `translate3d(-50%, ${finishLineY}px, 0)`;
             finishLine.style.display = 'block';
             finishLine.style.zIndex = '10';
-            // Verify finish line is far enough away
-            if (finishLineY >= playerY - 100) {
-                console.error('ERROR: Finish line too close!');
+        }
+        
+        // Create opponent racers
+        function createOpponents() {
+            // Remove existing opponents
+            opponents.forEach(opp => {
+                if (opp.element && opp.element.parentElement) {
+                    opp.element.remove();
+                }
+            });
+            opponents = [];
+            
+            const gameContainerEl = document.getElementById('gameContainer');
+            const containerWidth = gameContainerEl.offsetWidth;
+            const containerHeight = gameContainerEl.offsetHeight;
+            
+            // Get all character names except the selected one
+            const allCharacters = Object.keys(characterEmojis);
+            const availableCharacters = allCharacters.filter(char => char !== selectedCharacter);
+            
+            // Create 5 opponents
+            const numOpponents = 5;
+            const roadWidth = Math.max(containerWidth * 0.4, 300);
+            const roadLeft = (containerWidth - roadWidth) / 2;
+            const laneWidth = roadWidth / (numOpponents + 1);
+            
+            for (let i = 0; i < numOpponents; i++) {
+                const charName = availableCharacters[i % availableCharacters.length];
+                const emoji = characterEmojis[charName] || '🐱';
+                
+                // Create opponent element
+                const oppElement = document.createElement('div');
+                oppElement.className = 'opponent';
+                oppElement.textContent = emoji;
+                oppElement.innerHTML = emoji;
+                raceTrack.appendChild(oppElement);
+                
+                // Calculate starting position (spread across road width)
+                const xPos = roadLeft + (i + 1) * laneWidth;
+                const yPos = containerHeight - 80; // Start at bottom like player
+                
+                const opponent = {
+                    element: oppElement,
+                    name: charName,
+                    emoji: emoji,
+                    x: xPos,
+                    y: yPos,
+                    progress: 0,
+                    speed: 2.5 + Math.random() * 1.5, // Speed between 2.5 and 4
+                    finished: false,
+                    position: 0
+                };
+                
+                // Position opponent
+                oppElement.style.transform = `translate3d(${xPos - 30}px, ${yPos - 30}px, 0)`;
+                oppElement.style.display = 'block';
+                
+                opponents.push(opponent);
             }
         }
 
@@ -740,60 +748,6 @@
             }
         }
 
-        // Create a single treat on the road
-        function createTreat() {
-            // Only create if no active treat exists
-            const activeTreats = treats.filter(t => !t.collected && t.element && t.element.parentElement);
-            if (activeTreats.length > 0) {
-                    return; // Don't create if there's already an active treat
-            }
-            
-            // Cute treat emojis
-            const treatEmojis = ['🍰', '🍪', '🍭', '🍬', '🧁', '🍫', '🍩', '🍮', '🍯', '🥧'];
-            
-            const container = document.getElementById('gameContainer');
-            const containerWidth = container.offsetWidth;
-            const containerHeight = container.offsetHeight;
-            
-            // Road is centered and 40% wide (with min-width 300px)
-            const roadWidth = Math.max(containerWidth * 0.4, 300);
-            const roadLeft = (containerWidth - roadWidth) / 2; // Center the road
-            
-            // Create one treat ahead of the player
-            const treat = document.createElement('div');
-            treat.className = 'treat';
-            
-            // Pick a random treat emoji
-            const randomTreat = treatEmojis[Math.floor(Math.random() * treatEmojis.length)];
-            treat.textContent = randomTreat;
-            
-            // Random X position within road bounds (leaving margin from borders)
-            const margin = 40; // Keep treats away from road borders
-            const x = roadLeft + margin + Math.random() * (roadWidth - margin * 2);
-            
-            // Position treat ahead of player (above screen, will move down)
-            // Start further above screen so it's visible longer
-            const y = -800 - Math.random() * 400; // Start well above screen
-            
-            // Use transform for better performance
-            treat.style.transform = `translate(${x - 25}px, ${y}px)`;
-            treat.style.display = 'block';
-            treat.style.visibility = 'visible';
-            treat.style.zIndex = '20';
-            
-            raceTrack.appendChild(treat);
-            treats.push({ element: treat, x: x, y: y, collected: false });
-        }
-
-        // Create treats on the road (initialize with one treat)
-        function createTreats() {
-            // Remove existing treats
-            document.querySelectorAll('.treat').forEach(treat => treat.remove());
-            treats = [];
-            
-            // Create the first treat
-            createTreat();
-        }
 
         // Start Countdown
         function startCountdown() {
@@ -853,6 +807,12 @@
             keys[e.key] = false;
         });
 
+        // Update bounds cache on window resize
+        window.addEventListener('resize', () => {
+            containerCache = null;
+            updateBounds();
+        });
+
         // Jump function
         function jump() {
             if (player.classList.contains('jumping')) return;
@@ -861,6 +821,28 @@
             setTimeout(() => {
                 player.classList.remove('jumping');
             }, 500);
+        }
+
+        // Cache container reference and dimensions
+        let containerCache = null;
+        let containerWidthCache = 0;
+        let containerHeightCache = 0;
+        let boundsCache = { minX: 0, maxX: 0 };
+        
+        // Update cached bounds (call on resize or when needed)
+        function updateBounds() {
+            if (!containerCache) {
+                containerCache = document.getElementById('gameContainer');
+                if (!containerCache) return;
+            }
+            containerWidthCache = containerCache.offsetWidth;
+            containerHeightCache = containerCache.offsetHeight;
+            
+            const roadWidth = Math.max(containerWidthCache * 0.4, 300);
+            const roadLeft = (containerWidthCache - roadWidth) / 2;
+            const roadRight = roadLeft + roadWidth;
+            boundsCache.minX = roadLeft + 40;
+            boundsCache.maxX = roadRight - 40;
         }
 
         // Main Game Loop
@@ -872,207 +854,146 @@
                 return;
             }
             
-            // Get container for responsive bounds
-            const container = document.getElementById('gameContainer');
-            if (!container) return;
-            
-            const containerWidth = container.offsetWidth;
-            const containerHeight = container.offsetHeight;
-            
-            // Road is centered and 40% wide (with min-width 300px)
-            const roadWidth = Math.max(containerWidth * 0.4, 300);
-            const roadLeft = (containerWidth - roadWidth) / 2;
-            const roadRight = roadLeft + roadWidth;
-            const minX = roadLeft + 40; // Left boundary with margin
-            const maxX = roadRight - 40; // Right boundary with margin
+            // Update bounds cache if needed (only once per frame)
+            if (!containerCache) {
+                updateBounds();
+                if (!containerCache) return;
+            }
             
             // Handle acceleration (up arrow for speed boost)
-            // Reduced speeds to make game more playable and last longer
             if (keys && keys['ArrowUp']) {
-                playerSpeed = Math.min(playerSpeed + 0.3, 6); // Max speed reduced to 6
+                playerSpeed = Math.min(playerSpeed + 0.2, 5);
             } else {
-                playerSpeed = Math.max(playerSpeed - 0.1, 2); // Minimum speed reduced to 2
+                playerSpeed = Math.max(playerSpeed - 0.1, 2.5);
             }
             
-            // Player stays at fixed position, road moves instead
-            // Track progress (how far player has traveled)
-            playerProgress += playerSpeed;
+            // Move player forward (up the screen)
+            playerY -= playerSpeed;
+            playerProgress = containerHeightCache - playerY;
             
-            // Handle steering
+            // Handle steering with smooth movement
             if (keys) {
-                if (keys['ArrowLeft'] && playerX > minX) {
-                    playerX -= 5;
+                const moveSpeed = 3.5;
+                if (keys['ArrowLeft'] && playerX > boundsCache.minX) {
+                    playerX -= moveSpeed;
                 }
-                if (keys['ArrowRight'] && playerX < maxX) {
-                    playerX += 5;
+                if (keys['ArrowRight'] && playerX < boundsCache.maxX) {
+                    playerX += moveSpeed;
                 }
             }
             
-            // Update player position (player stays at bottom center)
+            // Update player position using transform3d
             const currentLeft = playerX - 30;
             const currentTop = playerY - 30;
-            // Use left/top for absolute positioning (consistent with initGame)
-            player.style.left = currentLeft + 'px';
-            player.style.top = currentTop + 'px';
-            // Ensure player is always visible
-            player.style.display = 'block';
-            player.style.visibility = 'visible';
-            player.style.opacity = '1';
-            player.style.zIndex = '1000';
+            player.style.transform = `translate3d(${currentLeft}px, ${currentTop}px, 0)`;
             
-            // Ensure player has emoji content
-            if (!player.textContent || player.textContent.trim() === '') {
-                const emoji = characterEmojis[selectedCharacter] || '🐱';
-                player.textContent = emoji;
-                player.innerHTML = emoji;
-            }
+            // Move opponents forward
+            moveOpponents();
             
-            // Move road elements (treats)
-            moveRoadElements();
+            // Calculate and update positions
+            updatePositions();
             
-            // Update score display
-            updateScore();
-            
-            // Check collisions
-            checkCollisions();
-            
-            // Check if player finished (when finish line reaches player position)
-            // finishLineY starts negative (-15000) and increases as it moves down
-            // Player is at fixed Y position (around 600-650, bottom of screen)
-            // When finishLineY reaches player's Y position, race is finished (exactly 1 minute)
-            // Only finish when:
-            // 1. finishLineY is close to player (within 50px)
-            // 2. finishLineY has moved significantly from start (at least 1000 pixels)
-            // 3. playerY is valid (greater than 100)
-            // 4. Game has been running for at least 5 seconds (prevents immediate finish)
-            // 5. Race hasn't already finished
-            if (!raceFinished && playerY > 100 && finishLineY > -14000 && gameTime >= 5) {
-                if (finishLineY >= playerY - 50 && finishLineY <= playerY + 50) {
-                    // Race finished
+            // Check if anyone finished (player or opponents)
+            if (!raceFinished) {
+                // Check if player finished
+                if (playerY <= finishLineY + 30) {
                     finishRace();
                 }
+                // Check if any opponent finished (race continues until player finishes)
+                opponents.forEach(opp => {
+                    if (!opp.finished && opp.y <= finishLineY + 30) {
+                        opp.finished = true;
+                    }
+                });
             }
             
             requestAnimationFrame(gameLoop);
         }
 
-        // Update score display
-        function updateScore() {
-            positionDisplay.textContent = 'Treats: ' + score + ' 🍰';
-        }
-
-        // Move road elements
-        function moveRoadElements() {
-            if (!gameStarted || raceFinished || countdownActive) return;
+        // Update position display
+        function updatePositions() {
+            // Create array of all racers with their progress
+            const allRacers = [
+                { name: 'You', progress: playerProgress, y: playerY, isPlayer: true }
+            ];
             
-            const container = document.getElementById('gameContainer');
-            const containerHeight = container.offsetHeight;
-            const containerWidth = container.offsetWidth;
-            const roadLeft = containerWidth * 0.3;
-            const roadWidth = containerWidth * 0.4;
+            opponents.forEach(opp => {
+                opp.progress = containerHeightCache - opp.y;
+                allRacers.push({
+                    name: opp.name,
+                    progress: opp.progress,
+                    y: opp.y,
+                    isPlayer: false
+                });
+            });
             
-            // Move treats down (toward player) based on player speed
-            // Use a slower speed for treats so they're visible longer
-            const treatSpeed = playerSpeed * 0.8; // Slightly slower than player speed
-            treats.forEach((treat, index) => {
-                if (!treat.collected && treat.element) {
-                    treat.y += treatSpeed; // Move treats down at slightly slower speed
-                    // Use transform for better performance
-                    treat.element.style.transform = `translate(${treat.x - 25}px, ${treat.y}px)`;
-                    
-                    // If treat goes off screen without being collected, create a new one
-                    if (treat.y > containerHeight + 50) {
-                        if (treat.element && treat.element.parentElement) {
-                            treat.element.remove();
-                        }
-                        treats.splice(index, 1);
-                        // Create a new treat ahead (only if no other treat exists)
-                        setTimeout(() => {
-                            createTreat();
-                        }, 100);
+            // Sort by progress (highest progress = furthest ahead = lower Y = better position)
+            allRacers.sort((a, b) => b.progress - a.progress);
+            
+            // Assign positions
+            allRacers.forEach((racer, index) => {
+                const position = index + 1;
+                if (racer.isPlayer) {
+                    // Update player position display
+                    const positionText = getPositionText(position);
+                    positionDisplay.textContent = `Position: ${positionText}`;
+                } else {
+                    // Find opponent and update their position
+                    const opp = opponents.find(o => o.name === racer.name);
+                    if (opp) {
+                        opp.position = position;
                     }
                 }
             });
-            
-            // Move finish line down (toward player)
-            finishLineY += playerSpeed;
-            finishLine.style.transform = `translateY(${finishLineY}px)`;
+        }
+        
+        // Get position text (1st, 2nd, 3rd, etc.)
+        function getPositionText(position) {
+            const suffixes = ['th', 'st', 'nd', 'rd'];
+            const v = position % 100;
+            return position + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
         }
 
         // Move opponents forward
         function moveOpponents() {
             if (!gameStarted || raceFinished || countdownActive) return;
             
-            const container = document.getElementById('gameContainer');
-            const containerHeight = container.offsetHeight;
-            const containerWidth = container.offsetWidth;
-            const roadLeft = containerWidth * 0.3;
-            const roadWidth = containerWidth * 0.4;
+            if (!containerCache) {
+                updateBounds();
+                if (!containerCache) return;
+            }
+            
+            const roadWidth = Math.max(containerWidthCache * 0.4, 300);
+            const roadLeft = (containerWidthCache - roadWidth) / 2;
+            const roadRight = roadLeft + roadWidth;
             
             opponents.forEach((opp, index) => {
-                // Opponents move forward by decreasing Y (moving up on screen toward finish)
-                // Each opponent has their own speed
-                const forwardSpeed = opp.speed + (gameTime * 0.003);
-                opp.y -= forwardSpeed; // Decrease Y to move forward (up on screen)
+                if (opp.finished) return;
                 
-                // Add some lateral movement (swerving)
-                const swerveAmount = Math.sin(gameTime * 0.5 + index) * 1.5;
+                // Move opponent forward (up the screen)
+                opp.y -= opp.speed;
+                opp.progress = containerHeightCache - opp.y;
+                
+                // Add slight AI swerving for realism
+                const swerveAmount = Math.sin(gameTime * 0.3 + index) * 2;
                 opp.x += swerveAmount;
                 
                 // Keep opponents within road bounds
-                if (opp.x < roadLeft) opp.x = roadLeft;
-                if (opp.x > roadLeft + roadWidth) opp.x = roadLeft + roadWidth;
+                if (opp.x < roadLeft + 30) opp.x = roadLeft + 30;
+                if (opp.x > roadRight - 30) opp.x = roadRight - 30;
                 
-                opp.element.style.left = (opp.x - 30) + 'px';
-                opp.element.style.top = (opp.y - 30) + 'px'; // Center the 60px opponent
+                // Update opponent position visually
+                const currentLeft = opp.x - 30;
+                const currentTop = opp.y - 30;
+                opp.element.style.transform = `translate3d(${currentLeft}px, ${currentTop}px, 0)`;
                 
                 // Check if opponent finished
-                if (opp.y <= finishLineY && !opp.finished) {
+                if (opp.y <= finishLineY + 30 && !opp.finished) {
                     opp.finished = true;
-                    // Could add opponent finish logic here
                 }
             });
-            
-            // Move finish line
-            finishLineY += moveSpeed;
-            finishLine.style.transform = `translateY(${finishLineY}px)`;
         }
 
-        // Check collisions with treats
-        function checkCollisions() {
-            // Check treat collisions
-            treats.forEach((treat, index) => {
-                if (!treat.collected && treat.y > playerY - 60 && treat.y < playerY + 60) {
-                    if (Math.abs(treat.x - playerX) < 50) {
-                        // Collect treat!
-                        treat.collected = true;
-                        score++;
-                        
-                        // Update score display immediately
-                        updateScore();
-                        
-                        // Visual feedback
-                        treat.element.style.opacity = '0';
-                        treat.element.style.transform = 'scale(2)';
-                        treat.element.style.transition = 'all 0.3s';
-                        
-                        // Remove treat after animation and create new one
-                        setTimeout(() => {
-                            treat.element.remove();
-                            // Remove from treats array
-                            const treatIndex = treats.indexOf(treat);
-                            if (treatIndex > -1) {
-                                treats.splice(treatIndex, 1);
-                            }
-                            // Create a new treat ahead (only if no other treat exists)
-                            if (treats.filter(t => !t.collected).length === 0) {
-                                createTreat();
-                            }
-                        }, 300);
-                    }
-                }
-            });
-        }
 
         // Finish Race
         function finishRace() {
@@ -1081,9 +1002,27 @@
             raceFinished = true;
             clearInterval(gameTimer);
             
+            // Calculate final positions
+            updatePositions();
+            
+            // Find player's final position
+            const allRacers = [
+                { name: 'You', progress: playerProgress, y: playerY, isPlayer: true }
+            ];
+            opponents.forEach(opp => {
+                allRacers.push({
+                    name: opp.name,
+                    progress: opp.progress,
+                    y: opp.y,
+                    isPlayer: false
+                });
+            });
+            allRacers.sort((a, b) => b.progress - a.progress);
+            const playerPosition = allRacers.findIndex(r => r.isPlayer) + 1;
+            
             // Show winner screen
             winnerCharacter.textContent = characterEmojis[selectedCharacter];
-            winnerTime.textContent = 'Time: ' + gameTime.toFixed(1) + 's';
+            winnerTime.textContent = `Finished ${getPositionText(playerPosition)} - Time: ${gameTime.toFixed(1)}s`;
             winnerScreen.style.display = 'flex';
         }
 
@@ -1109,9 +1048,13 @@
             characterCards.forEach(c => c.classList.remove('selected'));
             selectedCharacter = null;
             
-            // Clean up
-            document.querySelectorAll('.treat').forEach(treat => treat.remove());
-            document.querySelectorAll('.road-line').forEach(line => line.remove());
+            // Clean up opponents
+            opponents.forEach(opp => {
+                if (opp.element && opp.element.parentElement) {
+                    opp.element.remove();
+                }
+            });
+            opponents = [];
         }
     </script>
 </body>

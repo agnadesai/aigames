@@ -376,22 +376,37 @@
         // Points are normalized (0-1) and will be scaled to canvas size
         const letterPaths = {
             'A': [
-                // Left stroke
                 [{x: 0.3, y: 0.9}, {x: 0.3, y: 0.5}, {x: 0.5, y: 0.1}],
-                // Right stroke
                 [{x: 0.5, y: 0.1}, {x: 0.7, y: 0.5}, {x: 0.7, y: 0.9}],
-                // Crossbar
                 [{x: 0.35, y: 0.5}, {x: 0.65, y: 0.5}]
             ],
             'B': [
-                // Left vertical
                 [{x: 0.3, y: 0.1}, {x: 0.3, y: 0.9}],
-                // Top curve
                 [{x: 0.3, y: 0.1}, {x: 0.5, y: 0.1}, {x: 0.6, y: 0.2}, {x: 0.6, y: 0.4}, {x: 0.5, y: 0.5}, {x: 0.3, y: 0.5}],
-                // Bottom curve
                 [{x: 0.3, y: 0.5}, {x: 0.5, y: 0.5}, {x: 0.6, y: 0.6}, {x: 0.6, y: 0.8}, {x: 0.5, y: 0.9}, {x: 0.3, y: 0.9}]
             ],
-            // Add more letters as needed - for now, use a generic path generator
+            'C': [
+                [{x: 0.7, y: 0.2}, {x: 0.6, y: 0.1}, {x: 0.4, y: 0.1}, {x: 0.3, y: 0.2}, {x: 0.3, y: 0.8}, {x: 0.4, y: 0.9}, {x: 0.6, y: 0.9}, {x: 0.7, y: 0.8}]
+            ],
+            'D': [
+                [{x: 0.3, y: 0.1}, {x: 0.3, y: 0.9}],
+                [{x: 0.3, y: 0.1}, {x: 0.5, y: 0.1}, {x: 0.6, y: 0.3}, {x: 0.6, y: 0.7}, {x: 0.5, y: 0.9}, {x: 0.3, y: 0.9}]
+            ],
+            'E': [
+                [{x: 0.3, y: 0.1}, {x: 0.3, y: 0.9}],
+                [{x: 0.3, y: 0.1}, {x: 0.6, y: 0.1}],
+                [{x: 0.3, y: 0.5}, {x: 0.55, y: 0.5}],
+                [{x: 0.3, y: 0.9}, {x: 0.6, y: 0.9}]
+            ],
+            'F': [
+                [{x: 0.3, y: 0.1}, {x: 0.3, y: 0.9}],
+                [{x: 0.3, y: 0.1}, {x: 0.6, y: 0.1}],
+                [{x: 0.3, y: 0.5}, {x: 0.55, y: 0.5}]
+            ],
+            'O': [
+                [{x: 0.5, y: 0.2}, {x: 0.4, y: 0.1}, {x: 0.3, y: 0.2}, {x: 0.3, y: 0.5}, {x: 0.3, y: 0.8}, {x: 0.4, y: 0.9}, {x: 0.6, y: 0.9}, {x: 0.7, y: 0.8}, {x: 0.7, y: 0.5}, {x: 0.7, y: 0.2}, {x: 0.6, y: 0.1}, {x: 0.4, y: 0.1}, {x: 0.5, y: 0.2}]
+            ],
+            // For other letters, will use generatePathFromCanvas fallback
         };
 
         // Path following state
@@ -407,6 +422,10 @@
             canvasSize = maxWidth;
             canvas.width = canvasSize;
             canvas.height = canvasSize;
+            // Reinitialize checkpoints after resize
+            if (gameScreen.classList.contains('show')) {
+                initializeCheckpoints();
+            }
             drawLetter();
         }
 
@@ -494,14 +513,158 @@
         // Initialize with menu
         showMenu();
 
+        // Generate checkpoints from letter path
+        function generateCheckpoints(letter) {
+            const char = letter.toUpperCase();
+            let paths = letterPaths[char];
+            
+            // If letter not in dictionary, generate path from canvas rendering
+            if (!paths) {
+                paths = generatePathFromCanvas(letter);
+            }
+            
+            // Convert paths to checkpoints with interpolation for smoother detection
+            const checkpoints = [];
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const scale = canvasSize * 0.5; // Scale factor for paths - increased for larger letters
+            
+            for (const stroke of paths) {
+                for (let i = 0; i < stroke.length; i++) {
+                    const point = stroke[i];
+                    const x = centerX + (point.x - 0.5) * scale * 2;
+                    const y = centerY + (point.y - 0.5) * scale * 2;
+                    
+                    // Add the main checkpoint
+                    checkpoints.push({
+                        x: x,
+                        y: y,
+                        strokeIndex: paths.indexOf(stroke),
+                        pointIndex: i
+                    });
+                    
+                    // Add intermediate checkpoints between points for better detection
+                    if (i < stroke.length - 1) {
+                        const nextPoint = stroke[i + 1];
+                        const nextX = centerX + (nextPoint.x - 0.5) * scale * 2;
+                        const nextY = centerY + (nextPoint.y - 0.5) * scale * 2;
+                        
+                        // Add 2-3 intermediate points
+                        const numIntermediate = 2;
+                        for (let j = 1; j <= numIntermediate; j++) {
+                            const t = j / (numIntermediate + 1);
+                            checkpoints.push({
+                                x: x + (nextX - x) * t,
+                                y: y + (nextY - y) * t,
+                                strokeIndex: paths.indexOf(stroke),
+                                pointIndex: i + t
+                            });
+                        }
+                    }
+                }
+            }
+            
+            return checkpoints;
+        }
+
+        // Generate path from canvas rendering (fallback for letters not in dictionary)
+        function generatePathFromCanvas(letter) {
+            // Create temp canvas to extract letter outline
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 100;
+            tempCanvas.height = 100;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.font = 'bold 60px Arial';
+            tempCtx.textAlign = 'center';
+            tempCtx.textBaseline = 'middle';
+            tempCtx.fillStyle = 'black';
+            tempCtx.fillText(letter, 50, 50);
+            
+            // Extract edge points
+            const imageData = tempCtx.getImageData(0, 0, 100, 100);
+            const data = imageData.data;
+            const edgePoints = [];
+            
+            // Find edge pixels
+            for (let y = 1; y < 99; y++) {
+                for (let x = 1; x < 99; x++) {
+                    const index = (y * 100 + x) * 4;
+                    if (data[index + 3] > 128) {
+                        // Check if it's an edge
+                        let isEdge = false;
+                        for (let dy = -1; dy <= 1; dy++) {
+                            for (let dx = -1; dx <= 1; dx++) {
+                                if (dx === 0 && dy === 0) continue;
+                                const nIndex = ((y + dy) * 100 + (x + dx)) * 4;
+                                if (data[nIndex + 3] < 128) {
+                                    isEdge = true;
+                                    break;
+                                }
+                            }
+                            if (isEdge) break;
+                        }
+                        if (isEdge) {
+                            edgePoints.push({x: x / 100, y: y / 100});
+                        }
+                    }
+                }
+            }
+            
+            // Group edge points into strokes (simplified - just return as one stroke)
+            if (edgePoints.length > 0) {
+                // Sort points to create a path
+                return [edgePoints.slice(0, Math.min(50, edgePoints.length))];
+            }
+            
+            // Fallback: simple path
+            return [[{x: 0.3, y: 0.1}, {x: 0.7, y: 0.1}, {x: 0.7, y: 0.9}, {x: 0.3, y: 0.9}, {x: 0.3, y: 0.1}]];
+        }
+
+        // Initialize checkpoints for current letter
+        function initializeCheckpoints() {
+            letterCheckpoints = generateCheckpoints(currentCharacter);
+            // Checkpoint radius - larger to account for brush stroke width
+            checkpointRadius = Math.max(25, canvasSize * 0.06); // Increased for better detection
+            passedCheckpoints.clear();
+            currentCheckpointIndex = 0;
+        }
+
+        // Check if user is near a checkpoint - more forgiving
+        function checkCheckpointProximity(point) {
+            if (letterCheckpoints.length === 0) return false;
+            
+            // Check current checkpoint and a few ahead
+            const lookAhead = 3;
+            let foundCheckpoint = false;
+            
+            for (let i = currentCheckpointIndex; i < Math.min(currentCheckpointIndex + lookAhead, letterCheckpoints.length); i++) {
+                const checkpoint = letterCheckpoints[i];
+                const dx = point.x - checkpoint.x;
+                const dy = point.y - checkpoint.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist <= checkpointRadius) {
+                    // Mark as passed and advance
+                    passedCheckpoints.add(i);
+                    if (i >= currentCheckpointIndex) {
+                        // Advance to next unchecked checkpoint
+                        currentCheckpointIndex = Math.max(currentCheckpointIndex, i + 1);
+                        foundCheckpoint = true;
+                    }
+                }
+            }
+            
+            return foundCheckpoint;
+        }
+
         // Draw the letter/number
         function drawLetter() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             const letter = currentCharacter;
             
-            // Set up text style
-            ctx.font = `bold ${canvasSize * 0.6}px Arial`;
+            // Set up text style - larger letter for path-following algorithm
+            ctx.font = `bold ${canvasSize * 0.75}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
@@ -511,11 +674,25 @@
             ctx.fillStyle = 'rgba(255, 107, 157, 0.2)';
             ctx.fillText(letter, canvas.width / 2, canvas.height / 2);
             
+            // Draw checkpoints (small circles along the path)
+            if (letterCheckpoints.length > 0) {
+                for (let i = 0; i < letterCheckpoints.length; i++) {
+                    const checkpoint = letterCheckpoints[i];
+                    const isPassed = passedCheckpoints.has(i);
+                    const isNext = i === currentCheckpointIndex;
+                    
+                    ctx.beginPath();
+                    ctx.arc(checkpoint.x, checkpoint.y, isNext ? 8 : 5, 0, Math.PI * 2);
+                    ctx.fillStyle = isPassed ? '#2ecc71' : (isNext ? '#feca57' : 'rgba(255, 107, 157, 0.5)');
+                    ctx.fill();
+                }
+            }
+            
             // Store letter path for collision detection
             storeLetterPath(letter);
             
             // Draw all traced strokes separately (so they don't connect)
-            ctx.lineWidth = canvasSize * 0.12; // Thicker brush stroke for better visibility
+            ctx.lineWidth = canvasSize * 0.08; // Brush stroke width
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
@@ -560,7 +737,7 @@
             tempCanvas.height = canvas.height;
             const tempCtx = tempCanvas.getContext('2d');
             
-            tempCtx.font = `bold ${canvasSize * 0.6}px Arial`;
+            tempCtx.font = `bold ${canvasSize * 0.75}px Arial`;
             tempCtx.textAlign = 'center';
             tempCtx.textBaseline = 'middle';
             tempCtx.fillStyle = 'black';
@@ -626,9 +803,15 @@
             const pos = getEventPos(e);
             currentStroke.push(pos);
             
-            // Check if we're tracing over the letter
-            if (isPointOnLetter(pos.x, pos.y)) {
+            // Check if we're near a checkpoint (path following)
+            if (letterCheckpoints.length > 0) {
+                checkCheckpointProximity(pos);
                 checkCompletion();
+            } else {
+                // Fallback to old method if no checkpoints
+                if (isPointOnLetter(pos.x, pos.y)) {
+                    checkCompletion();
+                }
             }
             
             drawLetter();
@@ -651,157 +834,97 @@
             drawLetter();
         }
 
-        // Check if tracing is complete - using region-based detection
+        // Check if tracing is complete - using geometry-based path following
         function checkCompletion() {
-            if (isComplete || !letterPath) return;
+            if (isComplete) return;
             
-            // Combine all strokes (completed + current) into one array for checking
-            const allPoints = [];
-            for (const stroke of tracedStrokes) {
-                allPoints.push(...stroke);
-            }
-            allPoints.push(...currentStroke);
-            
-            if (allPoints.length < 80) return; // Require more points to prevent early triggers
-            
-            const data = letterPath.data;
-            
-            // Method: Divide letter into regions and check if each region is covered
-            // This prevents partial tracing from triggering completion
-            
-            // Find letter bounds
-            let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
-            let hasLetter = false;
-            
-            for (let y = 0; y < canvas.height; y++) {
-                for (let x = 0; x < canvas.width; x++) {
-                    const index = (y * canvas.width + x) * 4;
-                    if (index + 3 < data.length && data[index + 3] > 128) {
-                        hasLetter = true;
-                        minX = Math.min(minX, x);
-                        maxX = Math.max(maxX, x);
-                        minY = Math.min(minY, y);
-                        maxY = Math.max(maxY, y);
+            // Use path-following algorithm if checkpoints are available
+            if (letterCheckpoints.length > 0) {
+                const totalCheckpoints = letterCheckpoints.length;
+                const passedCount = passedCheckpoints.size;
+                
+                // Check sequential progress - require checkpoints to be passed in order
+                // Count how many consecutive checkpoints from the start have been passed
+                let consecutivePassed = 0;
+                for (let i = 0; i < totalCheckpoints; i++) {
+                    if (passedCheckpoints.has(i)) {
+                        consecutivePassed++;
+                    } else {
+                        break; // Stop at first gap
                     }
                 }
-            }
-            
-            if (!hasLetter) return;
-            
-            const letterWidth = maxX - minX;
-            const letterHeight = maxY - minY;
-            
-            // Divide letter into 9 regions (3x3 grid)
-            const regions = [];
-            const regionWidth = letterWidth / 3;
-            const regionHeight = letterHeight / 3;
-            
-            for (let row = 0; row < 3; row++) {
-                for (let col = 0; col < 3; col++) {
-                    regions.push({
-                        minX: minX + col * regionWidth,
-                        maxX: minX + (col + 1) * regionWidth,
-                        minY: minY + row * regionHeight,
-                        maxY: minY + (row + 1) * regionHeight,
-                        totalPixels: 0,
-                        coveredPixels: 0
-                    });
-                }
-            }
-            
-            // Sample traced points
-            const tracedPointsSet = [];
-            const traceSampleStep = Math.max(1, Math.floor(allPoints.length / 150));
-            for (let i = 0; i < allPoints.length; i += traceSampleStep) {
-                tracedPointsSet.push(allPoints[i]);
-            }
-            
-            // Adjust trace radius to match thicker brush stroke (12% of canvas)
-            // Use half the brush width as the detection radius
-            const traceRadius = Math.max(15, canvasSize * 0.06); // Matches brush stroke thickness
-            const sampleRate = 3;
-            
-            // Check each region
-            for (const region of regions) {
-                for (let y = region.minY; y < region.maxY; y += sampleRate) {
-                    for (let x = region.minX; x < region.maxX; x += sampleRate) {
-                        const px = Math.floor(x);
-                        const py = Math.floor(y);
-                        if (px >= 0 && px < canvas.width && py >= 0 && py < canvas.height) {
-                            const index = (py * canvas.width + px) * 4;
-                            if (index + 3 < data.length && data[index + 3] > 128) {
-                                region.totalPixels++;
-                                
-                                // Check if covered
-                                for (const point of tracedPointsSet) {
-                                    const dx = point.x - px;
-                                    const dy = point.y - py;
-                                    const dist = Math.sqrt(dx * dx + dy * dy);
-                                    if (dist <= traceRadius) {
-                                        region.coveredPixels++;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
+                
+                // Also check if we've reached near the end (allow some gaps but must reach far)
+                const maxReachedIndex = Math.max(...Array.from(passedCheckpoints), -1);
+                const reachedEnd = maxReachedIndex >= totalCheckpoints * 0.7; // Must reach 70% of the way
+                
+                const coverageRatio = passedCount / totalCheckpoints;
+                const sequentialRatio = consecutivePassed / totalCheckpoints;
+                
+                // More lenient requirements - balance between accuracy and achievability
+                const minCheckpointCoverage = 0.6; // 60% coverage
+                const minSequentialRatio = 0.5; // At least 50% must be consecutive from start
+                
+                // Also check path length to ensure substantial tracing
+                let pathLength = 0;
+                for (const stroke of tracedStrokes) {
+                    for (let i = 1; i < stroke.length; i++) {
+                        const dx = stroke[i].x - stroke[i-1].x;
+                        const dy = stroke[i].y - stroke[i-1].y;
+                        pathLength += Math.sqrt(dx * dx + dy * dy);
                     }
                 }
-            }
-            
-            // Calculate coverage for each region
-            // Adjusted for thicker brush stroke - need higher coverage per region
-            let regionsWithGoodCoverage = 0;
-            let totalCoverage = 0;
-            const minRegionCoverage = 0.6; // Increased to 60% - thicker brush covers more easily
-            
-            for (const region of regions) {
-                if (region.totalPixels > 0) {
-                    const regionCoverage = region.coveredPixels / region.totalPixels;
-                    totalCoverage += regionCoverage;
-                    if (regionCoverage >= minRegionCoverage) {
-                        regionsWithGoodCoverage++;
-                    }
-                }
-            }
-            
-            const avgCoverage = totalCoverage / regions.length;
-            const regionCoverageRatio = regionsWithGoodCoverage / regions.length;
-            
-            // Calculate path length
-            let pathLength = 0;
-            for (const stroke of tracedStrokes) {
-                for (let i = 1; i < stroke.length; i++) {
-                    const dx = stroke[i].x - stroke[i-1].x;
-                    const dy = stroke[i].y - stroke[i-1].y;
+                for (let i = 1; i < currentStroke.length; i++) {
+                    const dx = currentStroke[i].x - currentStroke[i-1].x;
+                    const dy = currentStroke[i].y - currentStroke[i-1].y;
                     pathLength += Math.sqrt(dx * dx + dy * dy);
                 }
-            }
-            for (let i = 1; i < currentStroke.length; i++) {
-                const dx = currentStroke[i].x - currentStroke[i-1].x;
-                const dy = currentStroke[i].y - currentStroke[i-1].y;
-                pathLength += Math.sqrt(dx * dx + dy * dy);
-            }
-            
-            // Adjusted path length requirement for thicker brush
-            const minPathLength = canvasSize * 0.25; // Slightly lower since thicker brush covers more
-            
-            // Debug info
-            console.log('Regions covered:', regionsWithGoodCoverage + '/9',
-                       'Region coverage ratio:', (regionCoverageRatio * 100).toFixed(1) + '%',
-                       'Avg coverage:', (avgCoverage * 100).toFixed(1) + '%',
-                       'Path length:', pathLength.toFixed(0),
-                       'Min path:', minPathLength.toFixed(0),
-                       'Brush width:', (canvasSize * 0.12).toFixed(0) + 'px');
-            
-            // Complete only if:
-            // 1. At least 7 out of 9 regions have good coverage (stricter for thicker brush)
-            // 2. Average coverage is high (75%+) - thicker brush should achieve this easily
-            // 3. Path length is sufficient
-            // Adjusted thresholds to account for thicker brush covering more area
-            if (regionsWithGoodCoverage >= 7 && 
-                avgCoverage >= 0.75 && 
-                pathLength >= minPathLength) {
-                completeTracing();
+                
+                const minPathLength = canvasSize * 0.25; // Reasonable path length
+                
+                console.log('Path Following - Total passed:', passedCount + '/' + totalCheckpoints,
+                           'Consecutive from start:', consecutivePassed,
+                           'Max reached index:', maxReachedIndex + '/' + totalCheckpoints,
+                           'Coverage:', (coverageRatio * 100).toFixed(1) + '%',
+                           'Sequential:', (sequentialRatio * 100).toFixed(1) + '%',
+                           'Path length:', pathLength.toFixed(0),
+                           '✓ Coverage:', coverageRatio >= minCheckpointCoverage ? 'YES' : 'NO',
+                           '✓ Sequential:', sequentialRatio >= minSequentialRatio ? 'YES' : 'NO',
+                           '✓ Reached end:', reachedEnd ? 'YES' : 'NO',
+                           '✓ Path length:', pathLength >= minPathLength ? 'YES' : 'NO');
+                
+                // Complete if:
+                // 1. Good total coverage (60%+) OR good sequential progress (50%+)
+                // 2. Reached near the end of the path (70%+)
+                // 3. Sufficient path length
+                // More lenient - allows completion if either coverage or sequential is good
+                if ((coverageRatio >= minCheckpointCoverage || sequentialRatio >= minSequentialRatio) &&
+                    reachedEnd &&
+                    pathLength >= minPathLength) {
+                    completeTracing();
+                }
+            } else {
+                // Fallback to old method if no checkpoints available
+                if (!letterPath) return;
+                // Simple check - just verify some tracing happened
+                const allPoints = [];
+                for (const stroke of tracedStrokes) {
+                    allPoints.push(...stroke);
+                }
+                allPoints.push(...currentStroke);
+                
+                if (allPoints.length > 50) {
+                    // Basic completion - can be improved
+                    let pointsOnLetter = 0;
+                    for (let i = 0; i < allPoints.length; i += 5) {
+                        if (isPointOnLetter(allPoints[i].x, allPoints[i].y)) {
+                            pointsOnLetter++;
+                        }
+                    }
+                    if (pointsOnLetter / (allPoints.length / 5) > 0.6) {
+                        completeTracing();
+                    }
+                }
             }
         }
 
@@ -869,6 +992,8 @@
             updateProgress();
             if (gameScreen.classList.contains('show')) {
                 resizeCanvas();
+                // Initialize checkpoints after canvas is ready
+                setTimeout(() => initializeCheckpoints(), 100);
             }
         }
 
