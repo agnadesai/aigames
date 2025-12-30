@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello Kitty Racing Adventure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #ff9ec7 0%, #ffb3d9 50%, #ffcce6 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        #gameContainer {
+            width: 100%;
+            max-width: 1000px;
+            height: 100vh;
+            max-height: 700px;
+            aspect-ratio: 1000 / 700;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (max-width: 1024px) {
+            #gameContainer {
+                width: 95vw;
+                height: 95vh;
+                max-height: 95vh;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #gameContainer {
+                width: 100vw;
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+        }
+
+        /* Character Selection Screen */
+        #characterSelection {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background: linear-gradient(135deg, #ff9ec7 0%, #ffb3d9 100%);
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        #characterSelection h1 {
+            color: #fff;
+            font-size: 36px;
+            margin-bottom: 15px;
+            margin-top: 10px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.2);
+        }
+
+        #characterGrid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            max-width: 900px;
+            margin: 10px 0;
+        }
+
+        .character-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 3px solid transparent;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .character-card:hover {
+            transform: scale(1.1);
+            border-color: #ff69b4;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .character-card.selected {
+            border-color: #ff1493;
+            background: #ffe6f2;
+            transform: scale(1.05);
+        }
+
+        .character-emoji {
+            font-size: 50px;
+            margin-bottom: 8px;
+        }
+
+        .character-name {
+            font-size: 12px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        #startButton {
+            margin-top: 20px;
+            margin-bottom: 15px;
+            padding: 15px 40px;
+            font-size: 24px;
+            background: #ff1493;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive;
+            box-shadow: 0 4px 15px rgba(255,20,147,0.4);
+            transition: all 0.3s;
+            position: relative;
+            z-index: 10;
+        }
+
+        #startButton:hover {
+            background: #ff69b4;
+            transform: scale(1.05);
+        }
+
+        #startButton:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Game Screen */
+        #gameScreen {
+            width: 100%;
+            height: 100%;
+            display: none;
+            position: relative;
+            background: linear-gradient(to bottom, #87ceeb 0%, #98d8c8 50%, #f7dc6f 100%);
+            overflow: hidden;
+        }
+
+        #gameUI {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #timer {
+            background: rgba(255,255,255,0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+
+        #position {
+            background: rgba(255,255,255,0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+
+        #raceTrack {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: visible;
+        }
+
+        .road {
+            position: absolute;
+            width: 40%;
+            min-width: 300px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #555;
+            border-left: 20px solid #fff;
+            border-right: 20px solid #fff;
+            z-index: 1;
+        }
+        
+        /* Add animated dashed center line effect */
+        .road::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 8px;
+            height: 200%;
+            transform: translateX(-50%);
+            background: repeating-linear-gradient(
+                to bottom,
+                #ffffff 0px,
+                #ffffff 50px,
+                transparent 50px,
+                transparent 100px
+            );
+            z-index: 2;
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
+            animation: roadScroll 2s linear infinite;
+        }
+        
+        @keyframes roadScroll {
+            from { 
+                top: 0;
+            }
+            to { 
+                top: -100px;
+            }
+        }
+
+        .road-line {
+            position: absolute;
+            width: 6px;
+            height: 80px;
+            background: #ffffff;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: roadLineMove 0.8s linear infinite;
+            z-index: 5;
+            box-shadow: 0 0 5px rgba(255,255,255,0.5);
+        }
+
+        @keyframes roadLineMove {
+            from { 
+                top: -80px; 
+                opacity: 1;
+            }
+            to { 
+                top: 100%; 
+                opacity: 1;
+            }
+        }
+
+
+        .treat {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            font-size: 40px;
+            text-align: center;
+            line-height: 50px;
+            animation: treatFloat 2s ease-in-out infinite;
+            z-index: 20;
+            will-change: transform;
+            pointer-events: none;
+        }
+
+        @keyframes treatFloat {
+            0%, 100% { 
+                transform: translateY(0) rotate(0deg); 
+            }
+            50% { 
+                transform: translateY(-10px) rotate(10deg); 
+            }
+        }
+
+        .player {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            font-size: 50px;
+            text-align: center;
+            line-height: 60px;
+            transition: transform 0.1s;
+            z-index: 1000 !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: none;
+            background: rgba(255,255,255,0.95) !important;
+            border: 4px solid #ff1493 !important;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(255,20,147,1) !important;
+        }
+
+        .opponent {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            font-size: 50px;
+            text-align: center;
+            line-height: 60px;
+            z-index: 100;
+            display: block;
+            pointer-events: none;
+            background: rgba(255,255,255,0.8);
+            border: 3px solid #4169e1;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(65,105,225,0.6);
+        }
+
+        .player.jumping {
+            animation: jump 0.5s ease-in-out;
+        }
+
+        @keyframes jump {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+        }
+
+        .finish-line {
+            position: absolute;
+            width: 40%;
+            min-width: 300px;
+            height: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: repeating-linear-gradient(
+                90deg,
+                #000 0px,
+                #000 20px,
+                #fff 20px,
+                #fff 40px
+            );
+            z-index: 10;
+        }
+
+        #restartButton {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background: rgba(255,20,147,0.9);
+            color: white;
+            border: 2px solid #fff;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive;
+            z-index: 200;
+            box-shadow: 0 4px 15px rgba(255,20,147,0.4);
+            transition: all 0.3s;
+        }
+
+        #restartButton:hover {
+            background: rgba(255,105,180,0.95);
+            transform: scale(1.05);
+        }
+
+        /* Winner Screen */
+        #winnerScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,182,193,0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+        }
+
+        #winnerScreen h2 {
+            font-size: 48px;
+            color: #ff1493;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.2);
+        }
+
+        #winnerCharacter {
+            font-size: 120px;
+            margin: 20px 0;
+        }
+
+        #winnerTime {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+
+        /* Countdown Screen */
+        #countdownScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+        }
+
+        #countdownNumber {
+            font-size: 150px;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 0 0 40px rgba(255,255,255,1), 0 0 80px rgba(255,20,147,0.8);
+            animation: countdownPulse 0.8s ease-out;
+            line-height: 1;
+        }
+
+        @keyframes countdownPulse {
+            0% { 
+                transform: scale(0.3); 
+                opacity: 0; 
+            }
+            50% { 
+                transform: scale(1.3); 
+            }
+            100% { 
+                transform: scale(1); 
+                opacity: 1; 
+            }
+        }
+
+        #goText {
+            font-size: 120px;
+            color: #ff1493;
+            font-weight: bold;
+            text-shadow: 0 0 50px rgba(255,20,147,1), 0 0 100px rgba(255,20,147,0.8);
+            animation: goPulse 1s ease-out;
+            line-height: 1;
+        }
+
+        @keyframes goPulse {
+            0% { 
+                transform: scale(0.2); 
+                opacity: 0; 
+            }
+            50% { 
+                transform: scale(1.4); 
+            }
+            100% { 
+                transform: scale(1); 
+                opacity: 1; 
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <!-- Character Selection Screen -->
+        <div id="characterSelection">
+            <h1>🐱 Hello Kitty Racing Adventure 🐱</h1>
+            <div id="characterGrid">
+                <div class="character-card" data-character="kitty">
+                    <div class="character-emoji">🐱</div>
+                    <div class="character-name">Hello Kitty</div>
+                </div>
+                <div class="character-card" data-character="melody">
+                    <div class="character-emoji">🐰</div>
+                    <div class="character-name">My Melody</div>
+                </div>
+                <div class="character-card" data-character="keroppi">
+                    <div class="character-emoji">🐸</div>
+                    <div class="character-name">Keroppi</div>
+                </div>
+                <div class="character-card" data-character="badtz">
+                    <div class="character-emoji">🐧</div>
+                    <div class="character-name">Badtz-Maru</div>
+                </div>
+                <div class="character-card" data-character="chococat">
+                    <div class="character-emoji">🐱</div>
+                    <div class="character-name">Chococat</div>
+                </div>
+                <div class="character-card" data-character="pompom">
+                    <div class="character-emoji">🐶</div>
+                    <div class="character-name">Pompompurin</div>
+                </div>
+                <div class="character-card" data-character="tuxedo">
+                    <div class="character-emoji">🐧</div>
+                    <div class="character-name">Tuxedosam</div>
+                </div>
+                <div class="character-card" data-character="kuromi">
+                    <div class="character-emoji">👹</div>
+                    <div class="character-name">Kuromi</div>
+                </div>
+                <div class="character-card" data-character="cinnamoroll">
+                    <div class="character-emoji">🐕</div>
+                    <div class="character-name">Cinnamoroll</div>
+                </div>
+            </div>
+            <button id="startButton" disabled>Start Race!</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen">
+            <div id="countdownScreen">
+                <div id="countdownNumber"></div>
+                <div id="goText" style="display: none;">GO!</div>
+            </div>
+            <div id="gameUI">
+                <div id="timer">Time: 0.0s</div>
+                <div id="position">Treats: 0 🍰</div>
+            </div>
+            <div id="raceTrack">
+                <div class="road"></div>
+                <div class="player" id="player"></div>
+                <div class="finish-line" id="finishLine"></div>
+            </div>
+            <div class="instructions">
+                Hold ↑ Arrow Key to accelerate, ← → to steer!
+            </div>
+            <button id="restartButton">Restart Race</button>
+            
+            <!-- Winner Screen -->
+            <div id="winnerScreen">
+                <h2>🎉 You Won! 🎉</h2>
+                <div id="winnerCharacter"></div>
+                <div id="winnerTime"></div>
+                <button id="playAgainButton" style="padding: 15px 40px; font-size: 24px; background: #ff1493; color: white; border: none; border-radius: 30px; cursor: pointer; font-family: 'Comic Sans MS', cursive;">Play Again!</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let selectedCharacter = null;
+        let gameStarted = false;
+        let countdownActive = false;
+        let countdownValue = 3;
+        let gameTime = 0;
+        let gameTimer = null;
+        let playerSpeed = 2; // Start with minimum speed (reduced for longer game)
+        let playerX = 500; // Center of road
+        let playerY = 600; // Bottom of screen (fixed position)
+        let playerProgress = 0; // How far player has traveled
+        let roadSpeed = 0;
+        let treats = []; // Collectible treats on the road
+        let score = 0; // Score for collecting treats
+        let finishLineY = -15000; // Distance for exactly 1 minute race
+        let raceFinished = false;
+        let keys = {};
+        let raceDistance = 5000; // Total race distance
+
+        // Character emoji mapping
+        const characterEmojis = {
+            kitty: '🐱',
+            melody: '🐰',
+            keroppi: '🐸',
+            badtz: '🐧',
+            chococat: '🐱',
+            pompom: '🐶',
+            tuxedo: '🐧',
+            kuromi: '👹',
+            cinnamoroll: '🐕'
+        };
+
+        // DOM Elements
+        const characterSelection = document.getElementById('characterSelection');
+        const gameScreen = document.getElementById('gameScreen');
+        const characterCards = document.querySelectorAll('.character-card');
+        const startButton = document.getElementById('startButton');
+        const player = document.getElementById('player');
+        const timerDisplay = document.getElementById('timer');
+        const positionDisplay = document.getElementById('position');
+        const restartButton = document.getElementById('restartButton');
+        const winnerScreen = document.getElementById('winnerScreen');
+        const winnerCharacter = document.getElementById('winnerCharacter');
+        const winnerTime = document.getElementById('winnerTime');
+        const playAgainButton = document.getElementById('playAgainButton');
+        const raceTrack = document.getElementById('raceTrack');
+        const finishLine = document.getElementById('finishLine');
+        const countdownScreen = document.getElementById('countdownScreen');
+        const countdownNumber = document.getElementById('countdownNumber');
+        const goText = document.getElementById('goText');
+
+        // Character Selection
+        characterCards.forEach(card => {
+            card.addEventListener('click', () => {
+                // Remove previous selection
+                characterCards.forEach(c => c.classList.remove('selected'));
+                // Add selection to clicked card
+                card.classList.add('selected');
+                selectedCharacter = card.dataset.character;
+                startButton.disabled = false;
+            });
+        });
+
+        // Start Game
+        startButton.addEventListener('click', () => {
+            if (!selectedCharacter) return;
+            
+            characterSelection.style.display = 'none';
+            gameScreen.style.display = 'block';
+            
+            // Set player emoji immediately
+            const emoji = characterEmojis[selectedCharacter] || '🐱';
+            player.textContent = emoji;
+            player.innerHTML = emoji; // Also set innerHTML as backup
+            
+            // Small delay to ensure DOM is ready
+            setTimeout(() => {
+                initGame();
+                startCountdown();
+            }, 50);
+        });
+
+        // Initialize Game
+        function initGame() {
+            gameTime = 0;
+            playerSpeed = 2; // Start with minimum speed (reduced for longer game)
+            // Position player at bottom center of screen
+            // raceTrack is 1000px wide x 700px tall
+            // Center X: 500px (center of 1000px)
+            // Bottom Y: 650px (near bottom, leaving 50px margin)
+            playerX = 500; // Center horizontally
+            playerY = 650; // Near bottom vertically
+            roadSpeed = 0;
+            treats = [];
+            score = 0;
+            finishLineY = -15000; // Distance for exactly 1 minute race
+            raceFinished = false;
+            
+            // Ensure player has emoji content FIRST
+            const emoji = characterEmojis[selectedCharacter] || '🐱';
+            // Set both textContent and innerHTML to ensure emoji renders
+            player.textContent = '';
+            player.innerHTML = '';
+            // Force a reflow
+            void player.offsetHeight;
+            player.textContent = emoji;
+            player.innerHTML = '<span style="font-size: 50px; display: block;">' + emoji + '</span>';
+            
+            // Fallback: if emoji doesn't show, add a visible indicator
+            if (!player.textContent || player.textContent.trim() === '') {
+                player.innerHTML = '<div style="width:100%;height:100%;background:#ff1493;border-radius:10px;"></div>';
+            }
+            
+            // Get container dimensions for responsive positioning
+            const gameContainerEl = document.getElementById('gameContainer');
+            const containerWidth = gameContainerEl.offsetWidth;
+            const containerHeight = gameContainerEl.offsetHeight;
+            
+            // Position player at bottom center - use percentage-based positioning
+            // Center horizontally: 50% - 30px (half of 60px player width)
+            // Bottom vertically: 90% from top (leaving 10% margin at bottom)
+            const centerX = containerWidth / 2;
+            const bottomY = containerHeight * 0.9;
+            
+            playerX = centerX;
+            playerY = bottomY;
+            
+            
+            const leftPos = centerX - 30; // Center the 60px player
+            const topPos = bottomY - 30;  // Position from top
+            
+            // Force all styles explicitly with !important values
+            player.style.cssText = `
+                left: ${leftPos}px !important;
+                top: ${topPos}px !important;
+                width: 60px !important;
+                height: 60px !important;
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                z-index: 1000 !important;
+                position: absolute !important;
+                background-color: rgba(255,255,255,0.95) !important;
+                border: 4px solid #ff1493 !important;
+                border-radius: 12px !important;
+                font-size: 50px !important;
+                text-align: center !important;
+                line-height: 60px !important;
+                box-shadow: 0 0 20px rgba(255,20,147,1) !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            `;
+            
+            // Create road lines (disabled - using static dotted line instead)
+            // createRoadLines();
+            
+            // Create treats on the road
+            createTreats();
+            
+            // Position finish line far ahead (not visible at start)
+            // Finish line distance calculated for exactly 1 minute race
+            // Game runs at ~60 FPS, player speed 2-6 (average ~3.5)
+            // At average speed 3.5: 3.5 pixels/frame * 60 FPS * 60 seconds = 12,600 pixels
+            // Plus player Y position (~650): 12,600 + 650 = 13,250
+            // Using 15,000 to account for speed variations and ensure ~60 seconds
+            finishLineY = -15000; // Distance for exactly 1 minute race
+            finishLine.style.transform = `translateY(${finishLineY}px)`;
+            finishLine.style.display = 'block';
+            finishLine.style.zIndex = '10';
+            // Verify finish line is far enough away
+            if (finishLineY >= playerY - 100) {
+                console.error('ERROR: Finish line too close!');
+            }
+        }
+
+        // Create animated road lines
+        function createRoadLines() {
+            // Remove existing lines
+            document.querySelectorAll('.road-line').forEach(line => line.remove());
+            
+            // Create more lines for smoother animation
+            const lineSpacing = 120; // Space between lines
+            const numLines = 25; // More lines for continuous effect
+            
+            for (let i = 0; i < numLines; i++) {
+                const line = document.createElement('div');
+                line.className = 'road-line';
+                line.style.top = (i * lineSpacing - 80) + 'px';
+                line.style.animationDelay = (i * 0.1) + 's';
+                line.style.display = 'block';
+                line.style.visibility = 'visible';
+                raceTrack.appendChild(line);
+            }
+        }
+
+        // Create a single treat on the road
+        function createTreat() {
+            // Only create if no active treat exists
+            const activeTreats = treats.filter(t => !t.collected && t.element && t.element.parentElement);
+            if (activeTreats.length > 0) {
+                    return; // Don't create if there's already an active treat
+            }
+            
+            // Cute treat emojis
+            const treatEmojis = ['🍰', '🍪', '🍭', '🍬', '🧁', '🍫', '🍩', '🍮', '🍯', '🥧'];
+            
+            const container = document.getElementById('gameContainer');
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
+            
+            // Road is centered and 40% wide (with min-width 300px)
+            const roadWidth = Math.max(containerWidth * 0.4, 300);
+            const roadLeft = (containerWidth - roadWidth) / 2; // Center the road
+            
+            // Create one treat ahead of the player
+            const treat = document.createElement('div');
+            treat.className = 'treat';
+            
+            // Pick a random treat emoji
+            const randomTreat = treatEmojis[Math.floor(Math.random() * treatEmojis.length)];
+            treat.textContent = randomTreat;
+            
+            // Random X position within road bounds (leaving margin from borders)
+            const margin = 40; // Keep treats away from road borders
+            const x = roadLeft + margin + Math.random() * (roadWidth - margin * 2);
+            
+            // Position treat ahead of player (above screen, will move down)
+            // Start further above screen so it's visible longer
+            const y = -800 - Math.random() * 400; // Start well above screen
+            
+            // Use transform for better performance
+            treat.style.transform = `translate(${x - 25}px, ${y}px)`;
+            treat.style.display = 'block';
+            treat.style.visibility = 'visible';
+            treat.style.zIndex = '20';
+            
+            raceTrack.appendChild(treat);
+            treats.push({ element: treat, x: x, y: y, collected: false });
+        }
+
+        // Create treats on the road (initialize with one treat)
+        function createTreats() {
+            // Remove existing treats
+            document.querySelectorAll('.treat').forEach(treat => treat.remove());
+            treats = [];
+            
+            // Create the first treat
+            createTreat();
+        }
+
+        // Start Countdown
+        function startCountdown() {
+            countdownActive = true;
+            countdownValue = 3;
+            countdownScreen.style.display = 'flex';
+            goText.style.display = 'none';
+            countdownNumber.textContent = countdownValue;
+            countdownNumber.style.display = 'block';
+            
+            const countdownInterval = setInterval(() => {
+                countdownValue--;
+                if (countdownValue > 0) {
+                    countdownNumber.textContent = countdownValue;
+                    countdownNumber.style.animation = 'none';
+                    void countdownNumber.offsetWidth; // Trigger reflow
+                    countdownNumber.style.animation = 'countdownPulse 0.5s ease-out';
+                } else if (countdownValue === 0) {
+                    countdownNumber.style.display = 'none';
+                    goText.style.display = 'block';
+                    goText.style.animation = 'goPulse 0.8s ease-out';
+                    setTimeout(() => {
+                        countdownScreen.style.display = 'none';
+                        countdownActive = false;
+                        gameStarted = true;
+                        startGameLoop();
+                    }, 800);
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+        }
+
+        // Start Game Loop
+        function startGameLoop() {
+            // Start timer
+            gameTimer = setInterval(() => {
+                if (!raceFinished && gameStarted) {
+                    gameTime += 0.1;
+                    timerDisplay.textContent = 'Time: ' + gameTime.toFixed(1) + 's';
+                }
+            }, 100);
+            
+            // Start game loop
+            gameLoop();
+        }
+
+        // Keyboard Controls
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            // Prevent default scrolling behavior
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Jump function
+        function jump() {
+            if (player.classList.contains('jumping')) return;
+            
+            player.classList.add('jumping');
+            setTimeout(() => {
+                player.classList.remove('jumping');
+            }, 500);
+        }
+
+        // Main Game Loop
+        function gameLoop() {
+            // Always continue the loop
+            requestAnimationFrame(gameLoop);
+            
+            if (!gameStarted || raceFinished || countdownActive) {
+                return;
+            }
+            
+            // Get container for responsive bounds
+            const container = document.getElementById('gameContainer');
+            if (!container) return;
+            
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
+            
+            // Road is centered and 40% wide (with min-width 300px)
+            const roadWidth = Math.max(containerWidth * 0.4, 300);
+            const roadLeft = (containerWidth - roadWidth) / 2;
+            const roadRight = roadLeft + roadWidth;
+            const minX = roadLeft + 40; // Left boundary with margin
+            const maxX = roadRight - 40; // Right boundary with margin
+            
+            // Handle acceleration (up arrow for speed boost)
+            // Reduced speeds to make game more playable and last longer
+            if (keys && keys['ArrowUp']) {
+                playerSpeed = Math.min(playerSpeed + 0.3, 6); // Max speed reduced to 6
+            } else {
+                playerSpeed = Math.max(playerSpeed - 0.1, 2); // Minimum speed reduced to 2
+            }
+            
+            // Player stays at fixed position, road moves instead
+            // Track progress (how far player has traveled)
+            playerProgress += playerSpeed;
+            
+            // Handle steering
+            if (keys) {
+                if (keys['ArrowLeft'] && playerX > minX) {
+                    playerX -= 5;
+                }
+                if (keys['ArrowRight'] && playerX < maxX) {
+                    playerX += 5;
+                }
+            }
+            
+            // Update player position (player stays at bottom center)
+            const currentLeft = playerX - 30;
+            const currentTop = playerY - 30;
+            // Use left/top for absolute positioning (consistent with initGame)
+            player.style.left = currentLeft + 'px';
+            player.style.top = currentTop + 'px';
+            // Ensure player is always visible
+            player.style.display = 'block';
+            player.style.visibility = 'visible';
+            player.style.opacity = '1';
+            player.style.zIndex = '1000';
+            
+            // Ensure player has emoji content
+            if (!player.textContent || player.textContent.trim() === '') {
+                const emoji = characterEmojis[selectedCharacter] || '🐱';
+                player.textContent = emoji;
+                player.innerHTML = emoji;
+            }
+            
+            // Move road elements (treats)
+            moveRoadElements();
+            
+            // Update score display
+            updateScore();
+            
+            // Check collisions
+            checkCollisions();
+            
+            // Check if player finished (when finish line reaches player position)
+            // finishLineY starts negative (-15000) and increases as it moves down
+            // Player is at fixed Y position (around 600-650, bottom of screen)
+            // When finishLineY reaches player's Y position, race is finished (exactly 1 minute)
+            // Only finish when:
+            // 1. finishLineY is close to player (within 50px)
+            // 2. finishLineY has moved significantly from start (at least 1000 pixels)
+            // 3. playerY is valid (greater than 100)
+            // 4. Game has been running for at least 5 seconds (prevents immediate finish)
+            // 5. Race hasn't already finished
+            if (!raceFinished && playerY > 100 && finishLineY > -14000 && gameTime >= 5) {
+                if (finishLineY >= playerY - 50 && finishLineY <= playerY + 50) {
+                    // Race finished
+                    finishRace();
+                }
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Update score display
+        function updateScore() {
+            positionDisplay.textContent = 'Treats: ' + score + ' 🍰';
+        }
+
+        // Move road elements
+        function moveRoadElements() {
+            if (!gameStarted || raceFinished || countdownActive) return;
+            
+            const container = document.getElementById('gameContainer');
+            const containerHeight = container.offsetHeight;
+            const containerWidth = container.offsetWidth;
+            const roadLeft = containerWidth * 0.3;
+            const roadWidth = containerWidth * 0.4;
+            
+            // Move treats down (toward player) based on player speed
+            // Use a slower speed for treats so they're visible longer
+            const treatSpeed = playerSpeed * 0.8; // Slightly slower than player speed
+            treats.forEach((treat, index) => {
+                if (!treat.collected && treat.element) {
+                    treat.y += treatSpeed; // Move treats down at slightly slower speed
+                    // Use transform for better performance
+                    treat.element.style.transform = `translate(${treat.x - 25}px, ${treat.y}px)`;
+                    
+                    // If treat goes off screen without being collected, create a new one
+                    if (treat.y > containerHeight + 50) {
+                        if (treat.element && treat.element.parentElement) {
+                            treat.element.remove();
+                        }
+                        treats.splice(index, 1);
+                        // Create a new treat ahead (only if no other treat exists)
+                        setTimeout(() => {
+                            createTreat();
+                        }, 100);
+                    }
+                }
+            });
+            
+            // Move finish line down (toward player)
+            finishLineY += playerSpeed;
+            finishLine.style.transform = `translateY(${finishLineY}px)`;
+        }
+
+        // Move opponents forward
+        function moveOpponents() {
+            if (!gameStarted || raceFinished || countdownActive) return;
+            
+            const container = document.getElementById('gameContainer');
+            const containerHeight = container.offsetHeight;
+            const containerWidth = container.offsetWidth;
+            const roadLeft = containerWidth * 0.3;
+            const roadWidth = containerWidth * 0.4;
+            
+            opponents.forEach((opp, index) => {
+                // Opponents move forward by decreasing Y (moving up on screen toward finish)
+                // Each opponent has their own speed
+                const forwardSpeed = opp.speed + (gameTime * 0.003);
+                opp.y -= forwardSpeed; // Decrease Y to move forward (up on screen)
+                
+                // Add some lateral movement (swerving)
+                const swerveAmount = Math.sin(gameTime * 0.5 + index) * 1.5;
+                opp.x += swerveAmount;
+                
+                // Keep opponents within road bounds
+                if (opp.x < roadLeft) opp.x = roadLeft;
+                if (opp.x > roadLeft + roadWidth) opp.x = roadLeft + roadWidth;
+                
+                opp.element.style.left = (opp.x - 30) + 'px';
+                opp.element.style.top = (opp.y - 30) + 'px'; // Center the 60px opponent
+                
+                // Check if opponent finished
+                if (opp.y <= finishLineY && !opp.finished) {
+                    opp.finished = true;
+                    // Could add opponent finish logic here
+                }
+            });
+            
+            // Move finish line
+            finishLineY += moveSpeed;
+            finishLine.style.transform = `translateY(${finishLineY}px)`;
+        }
+
+        // Check collisions with treats
+        function checkCollisions() {
+            // Check treat collisions
+            treats.forEach((treat, index) => {
+                if (!treat.collected && treat.y > playerY - 60 && treat.y < playerY + 60) {
+                    if (Math.abs(treat.x - playerX) < 50) {
+                        // Collect treat!
+                        treat.collected = true;
+                        score++;
+                        
+                        // Update score display immediately
+                        updateScore();
+                        
+                        // Visual feedback
+                        treat.element.style.opacity = '0';
+                        treat.element.style.transform = 'scale(2)';
+                        treat.element.style.transition = 'all 0.3s';
+                        
+                        // Remove treat after animation and create new one
+                        setTimeout(() => {
+                            treat.element.remove();
+                            // Remove from treats array
+                            const treatIndex = treats.indexOf(treat);
+                            if (treatIndex > -1) {
+                                treats.splice(treatIndex, 1);
+                            }
+                            // Create a new treat ahead (only if no other treat exists)
+                            if (treats.filter(t => !t.collected).length === 0) {
+                                createTreat();
+                            }
+                        }, 300);
+                    }
+                }
+            });
+        }
+
+        // Finish Race
+        function finishRace() {
+            if (raceFinished) return;
+            
+            raceFinished = true;
+            clearInterval(gameTimer);
+            
+            // Show winner screen
+            winnerCharacter.textContent = characterEmojis[selectedCharacter];
+            winnerTime.textContent = 'Time: ' + gameTime.toFixed(1) + 's';
+            winnerScreen.style.display = 'flex';
+        }
+
+        // Restart Game
+        restartButton.addEventListener('click', () => {
+            resetGame();
+        });
+
+        playAgainButton.addEventListener('click', () => {
+            winnerScreen.style.display = 'none';
+            resetGame();
+        });
+
+        function resetGame() {
+            gameStarted = false;
+            raceFinished = false;
+            clearInterval(gameTimer);
+            
+            // Reset UI
+            characterSelection.style.display = 'flex';
+            gameScreen.style.display = 'none';
+            startButton.disabled = true;
+            characterCards.forEach(c => c.classList.remove('selected'));
+            selectedCharacter = null;
+            
+            // Clean up
+            document.querySelectorAll('.treat').forEach(treat => treat.remove());
+            document.querySelectorAll('.road-line').forEach(line => line.remove());
+        }
+    </script>
+</body>
+</html>
+
