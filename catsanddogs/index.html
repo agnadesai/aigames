@@ -19,6 +19,44 @@
             min-height: 100vh;
             background: linear-gradient(to bottom, #87CEEB 0%, #98D8C8 100%);
             padding: 20px;
+            padding-top: 70px;
+        }
+
+        /* Navigation Bar */
+        .game-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 0.5rem 1rem;
+            z-index: 10000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .game-nav a {
+            text-decoration: none;
+            color: #667eea;
+            font-weight: 600;
+            font-size: 1.2rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .game-nav a:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .game-nav .logo {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .game-container {
@@ -172,6 +210,10 @@
     </style>
 </head>
 <body>
+    <!-- Navigation Bar -->
+    <nav class="game-nav">
+        <a href="../index.html" class="logo">🎮 AI Games</a>
+    </nav>
     <div class="game-container">
         <h1>🐱 Cats vs Dogs Arena 🐶</h1>
         
