@@ -5,6 +5,7 @@ A collection of fun and interactive games created with AI. Play amazing games in
 ## 🌐 Play Online
 
 **Play these games at: https://aigames-gamma.vercel.app/**
+**Tiny URL: https://tinyurl.com/fun-games-ai**
 
 ## 🎯 Games Available
 
