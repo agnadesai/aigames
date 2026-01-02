@@ -4,45 +4,6 @@ const ctx = canvas.getContext('2d');
 const scoreElement = document.getElementById('score');
 const gameOverElement = document.getElementById('gameOver');
 
-// Responsive canvas sizing for mobile
-function resizeCanvas() {
-    const maxWidth = Math.min(800, window.innerWidth - 20);
-    const maxHeight = Math.min(600, window.innerHeight * 0.6);
-    
-    // Maintain aspect ratio (4:3)
-    let newWidth = maxWidth;
-    let newHeight = (newWidth / 800) * 600;
-    
-    if (newHeight > maxHeight) {
-        newHeight = maxHeight;
-        newWidth = (newHeight / 600) * 800;
-    }
-    
-    // Only resize if dimensions changed
-    if (canvas.width !== newWidth || canvas.height !== newHeight) {
-        const oldHeight = canvas.height;
-        canvas.width = newWidth;
-        canvas.height = newHeight;
-        
-        // Adjust bird position proportionally to keep it centered
-        if (oldHeight > 0) {
-            bird.y = (bird.y / oldHeight) * newHeight;
-        } else {
-            bird.y = newHeight / 2;
-        }
-        
-        // Ensure bird stays within bounds
-        bird.y = Math.max(bird.height / 2, Math.min(newHeight - bird.height / 2, bird.y));
-    }
-}
-
-// Initial resize and on orientation change
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
-window.addEventListener('orientationchange', () => {
-    setTimeout(resizeCanvas, 100);
-});
-
 // Game State
 let gameState = 'playing'; // 'playing' or 'gameOver'
 let score = 0;
@@ -57,7 +18,7 @@ let deathFlash = 0; // For visual feedback on death
 const bird = {
     worldX: 0, // World position in tiles (0 = first tile)
     x: 0, // Screen position (will be calculated)
-    y: 0, // Will be set after canvas is resized
+    y: canvas.height / 2,
     width: 30,
     height: 30,
     isJumping: false,
@@ -67,9 +28,6 @@ const bird = {
     targetWorldX: 0, // Target tile position
     lastWorldX: -1 // Track when bird moves to new tile
 };
-
-// Initialize bird position after canvas is sized
-bird.y = canvas.height / 2;
 
 // Roads and Vehicles
 let roads = [];
