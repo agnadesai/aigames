@@ -19,6 +19,21 @@
             border: 3px solid #333;
             background: #87CEEB;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 100%;
+            max-height: 70vh;
+            width: auto;
+            height: auto;
+        }
+        @media (orientation: portrait) {
+            #gameCanvas {
+                max-height: 60vh;
+            }
+            #instructions {
+                font-size: 14px;
+            }
+            #score {
+                font-size: 20px;
+            }
         }
         #gameContainer {
             text-align: center;
