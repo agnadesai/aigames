@@ -56,11 +56,236 @@
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
         }
+        #levelSelect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #levelSelect.hidden {
+            display: none;
+        }
+        .level-menu {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 500px;
+        }
+        .level-menu h1 {
+            color: white;
+            margin-bottom: 30px;
+            font-size: 36px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .level-button {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            margin: 15px 0;
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid white;
+            border-radius: 10px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        .level-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        .level-button:active {
+            transform: scale(0.98);
+        }
+        .level-description {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        #leaderboard {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+        #leaderboard.show {
+            display: flex;
+        }
+        .leaderboard-menu {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .leaderboard-menu h1 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 36px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .leaderboard-entry {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            font-size: 20px;
+        }
+        .leaderboard-rank {
+            font-weight: bold;
+            font-size: 24px;
+            min-width: 40px;
+        }
+        .leaderboard-name {
+            flex: 1;
+            text-align: left;
+            margin-left: 20px;
+        }
+        .leaderboard-score {
+            font-weight: bold;
+            font-size: 22px;
+        }
+        #nameInput {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1002;
+        }
+        #nameInput.show {
+            display: flex;
+        }
+        .name-input-menu {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 60px 40px 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 400px;
+        }
+        .name-input-menu h2 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        .name-input-menu input {
+            width: 100%;
+            padding: 15px;
+            font-size: 20px;
+            border: 3px solid white;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .name-input-menu button {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid white;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .name-input-menu button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+        #leaderboardButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 999;
+            transition: all 0.3s;
+        }
+        #leaderboardButton:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
 <body>
+    <div id="levelSelect">
+        <div class="level-menu">
+            <h1>🎮 Select Level</h1>
+            <button class="level-button" onclick="startGame(1)">
+                Level 1: Roads
+                <div class="level-description">Navigate through traffic</div>
+            </button>
+            <button class="level-button" onclick="startGame(2)">
+                Level 2: Trains
+                <div class="level-description">Avoid trains on tracks</div>
+            </button>
+            <button class="level-button" onclick="startGame(3)">
+                Level 3: River
+                <div class="level-description">Ride logs across the river</div>
+            </button>
+            <button class="level-button" onclick="startGame(4)">
+                Level 4: Combined
+                <div class="level-description">Mix of all obstacles</div>
+            </button>
+        </div>
+    </div>
+    <button id="leaderboardButton" onclick="showLeaderboard()">🏆 Leaderboard</button>
+    
+    <div id="nameInput">
+        <div class="name-input-menu">
+            <h2>Enter Your Nickname</h2>
+            <input type="text" id="playerName" placeholder="Your Nickname" maxlength="20" autofocus>
+            <div class="button-group">
+                <button id="nameSubmitButton" onclick="savePlayerName()">Start Game</button>
+                <button onclick="skipNameInput()">Skip</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="leaderboard">
+        <div class="leaderboard-menu">
+            <h1>🏆 Leaderboard</h1>
+            <div id="leaderboardList"></div>
+            <button class="level-button" onclick="hideLeaderboard()" style="margin-top: 20px;">Close</button>
+        </div>
+    </div>
+    
     <div id="gameContainer">
-        <div id="score">Distance: 0</div>
+        <div id="score">Distance: 0 | Level: 1</div>
         <canvas id="gameCanvas" width="800" height="600"></canvas>
         <div id="instructions">
             <p>↑ ↓ Arrow Keys: Move Up/Down | SPACE: Jump Forward</p>
