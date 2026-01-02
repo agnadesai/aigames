@@ -376,7 +376,63 @@
                     const dir = btn.getAttribute('data-direction');
                     handleTouchDirection(dir);
                 });
+                // Also support touch events for better mobile experience
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const dir = btn.getAttribute('data-direction');
+                    handleTouchDirection(dir);
+                });
             });
+            
+            // Add swipe gesture support for mobile
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchEndX = 0;
+            let touchEndY = 0;
+            
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+            }, { passive: false });
+            
+            canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                if (!touchStartX || !touchStartY) return;
+                
+                const touch = e.changedTouches[0];
+                touchEndX = touch.clientX;
+                touchEndY = touch.clientY;
+                
+                const deltaX = touchEndX - touchStartX;
+                const deltaY = touchEndY - touchStartY;
+                const minSwipeDistance = 30; // Minimum distance for a swipe
+                
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    // Horizontal swipe
+                    if (Math.abs(deltaX) > minSwipeDistance) {
+                        if (deltaX > 0) {
+                            handleTouchDirection('right');
+                        } else {
+                            handleTouchDirection('left');
+                        }
+                    }
+                } else {
+                    // Vertical swipe
+                    if (Math.abs(deltaY) > minSwipeDistance) {
+                        if (deltaY > 0) {
+                            handleTouchDirection('down');
+                        } else {
+                            handleTouchDirection('up');
+                        }
+                    }
+                }
+                
+                // Reset
+                touchStartX = 0;
+                touchStartY = 0;
+            }, { passive: false });
 
             // Check if mobile device
             if (isMobileDevice()) {

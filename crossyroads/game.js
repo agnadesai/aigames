@@ -114,6 +114,53 @@ document.addEventListener('keyup', (e) => {
     keys[e.code] = false;
 });
 
+// Mobile Touch Support
+let touchStartY = 0;
+let touchStartTime = 0;
+
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const touchY = touch.clientY - rect.top;
+    touchStartY = touchY;
+    touchStartTime = Date.now();
+    
+    // Determine action based on touch position
+    const canvasHeight = canvas.height;
+    const topThird = canvasHeight / 3;
+    const bottomThird = canvasHeight * 2 / 3;
+    
+    if (touchY < topThird) {
+        // Top third - move up
+        keys['ArrowUp'] = true;
+    } else if (touchY > bottomThird) {
+        // Bottom third - move down
+        keys['ArrowDown'] = true;
+    } else {
+        // Middle third - jump forward
+        if (!bird.isJumping && gameState === 'playing') {
+            keys['Space'] = true;
+        }
+    }
+    
+    // Restart on game over
+    if (gameState === 'gameOver') {
+        restartGame();
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    keys['ArrowUp'] = false;
+    keys['ArrowDown'] = false;
+    keys['Space'] = false;
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+}, { passive: false });
+
 // Get tile at index
 function getTileAt(index) {
     if (index >= 0 && index < roads.length) {
