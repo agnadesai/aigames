@@ -187,24 +187,6 @@
             }
         };
 
-        // Unicorn image
-        const unicornImage = new Image();
-        unicornImage.src = 'unicorn.png'; // Unicorn image
-        let unicornImageLoaded = false;
-        unicornImage.onload = function() {
-            unicornImageLoaded = true;
-        };
-        unicornImage.onerror = function() {
-            // Try alternative names if first one fails
-            if (unicornImage.src.indexOf('unicorn.png') !== -1) {
-                unicornImage.src = 'unicorn.jpg';
-            } else if (unicornImage.src.indexOf('unicorn.jpg') !== -1) {
-                unicornImage.src = 'unicorn.gif';
-            } else {
-                console.warn('Unicorn image not found. Using fallback drawing.');
-                unicornImageLoaded = false;
-            }
-        };
 
         // Game settings based on player type
         const gameSettings = {
@@ -468,7 +450,7 @@
             document.getElementById('playerScore').textContent = playerScore;
         }
 
-        // Draw unicorn figure using image
+        // Draw unicorn figure (matching the attached image exactly)
         function drawUnicorn(x, y) {
             const centerX = x + player.width / 2;
             const centerY = y + player.height / 2;
@@ -476,48 +458,157 @@
             // Save context for transformations
             ctx.save();
             
-            // If image is loaded, draw it
-            if (unicornImageLoaded && unicornImage.complete && unicornImage.width > 0) {
-                // Calculate aspect ratio to maintain proportions
-                const imageAspect = unicornImage.width / unicornImage.height;
-                let drawWidth = player.width;
-                let drawHeight = player.height;
-                
-                // Adjust to maintain aspect ratio
-                if (imageAspect > 1) {
-                    // Image is wider than tall
-                    drawHeight = drawWidth / imageAspect;
-                } else {
-                    // Image is taller than wide
-                    drawWidth = drawHeight * imageAspect;
-                }
-                
-                // Flip image horizontally
-                ctx.translate(centerX, centerY);
-                ctx.scale(-1, 1);
-                ctx.translate(-centerX, -centerY);
-                
-                // Center the image
-                const drawX = x + (player.width - drawWidth) / 2;
-                const drawY = y + (player.height - drawHeight) / 2;
-                
-                // Draw the image
-                ctx.drawImage(
-                    unicornImage,
-                    drawX,
-                    drawY,
-                    drawWidth,
-                    drawHeight
-                );
-            } else {
-                // Fallback: draw simple placeholder if image not loaded
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(x, y, player.width, player.height);
-                ctx.fillStyle = '#000000';
-                ctx.font = '12px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('Unicorn', centerX, centerY);
+            // Draw body (white)
+            ctx.fillStyle = '#FFFFFF'; // White
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY + 5, 28, 22, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw head (white)
+            ctx.beginPath();
+            ctx.ellipse(centerX - 12, centerY - 8, 16, 14, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw muzzle (light pink)
+            ctx.fillStyle = '#FFB6C1'; // Light pink
+            ctx.beginPath();
+            ctx.ellipse(centerX - 20, centerY - 5, 6, 5, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw ear (pointed, white outer with purple inner)
+            ctx.fillStyle = '#FFFFFF'; // White
+            ctx.beginPath();
+            ctx.moveTo(centerX - 5, centerY - 20);
+            ctx.lineTo(centerX - 12, centerY - 28);
+            ctx.lineTo(centerX - 2, centerY - 22);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Inner ear (purple)
+            ctx.fillStyle = '#800080'; // Deep purple
+            ctx.beginPath();
+            ctx.moveTo(centerX - 6, centerY - 21);
+            ctx.lineTo(centerX - 10, centerY - 26);
+            ctx.lineTo(centerX - 3, centerY - 22);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw horn (golden, pointed, curving slightly upwards)
+            ctx.fillStyle = '#FFD700'; // Gold
+            ctx.beginPath();
+            ctx.moveTo(centerX - 6, centerY - 22);
+            ctx.lineTo(centerX - 8, centerY - 32);
+            ctx.lineTo(centerX - 4, centerY - 32);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw mane (pink and magenta shades, layered and vibrant)
+            const maneColors = ['#FF69B4', '#FF1493', '#DC143C', '#C71585', '#FF69B4', '#FF1493']; // Pink and magenta shades
+            const maneYStart = centerY - 15;
+            const maneXStart = centerX - 20;
+            
+            for (let i = 0; i < maneColors.length; i++) {
+                ctx.fillStyle = maneColors[i];
+                ctx.beginPath();
+                const yPos = maneYStart - (i * 3);
+                ctx.moveTo(maneXStart, yPos);
+                ctx.quadraticCurveTo(maneXStart - 10, yPos - 6, maneXStart - 4, yPos - 10);
+                ctx.quadraticCurveTo(maneXStart - 12, yPos - 14, maneXStart - 6, yPos - 18);
+                ctx.quadraticCurveTo(maneXStart - 8, yPos - 16, maneXStart - 2, yPos - 12);
+                ctx.quadraticCurveTo(maneXStart, yPos - 8, maneXStart, yPos);
+                ctx.closePath();
+                ctx.fill();
             }
+            
+            // Draw tail (deep magenta/purple with bright yellow section at top)
+            // Yellow section at top
+            ctx.fillStyle = '#FFD700'; // Bright yellow
+            ctx.beginPath();
+            ctx.moveTo(centerX + 22, centerY + 8);
+            ctx.quadraticCurveTo(centerX + 25, centerY + 10, centerX + 24, centerY + 14);
+            ctx.quadraticCurveTo(centerX + 22, centerY + 12, centerX + 20, centerY + 10);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Deep magenta/purple tail
+            ctx.fillStyle = '#8B008B'; // Deep magenta
+            ctx.beginPath();
+            ctx.moveTo(centerX + 20, centerY + 10);
+            ctx.quadraticCurveTo(centerX + 28, centerY + 15, centerX + 26, centerY + 22);
+            ctx.quadraticCurveTo(centerX + 30, centerY + 28, centerX + 28, centerY + 35);
+            ctx.quadraticCurveTo(centerX + 25, centerY + 32, centerX + 22, centerY + 28);
+            ctx.quadraticCurveTo(centerX + 20, centerY + 22, centerX + 18, centerY + 18);
+            ctx.quadraticCurveTo(centerX + 19, centerY + 14, centerX + 20, centerY + 10);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw five-pointed yellow star on flank
+            ctx.fillStyle = '#FFD700'; // Yellow
+            ctx.beginPath();
+            const starX = centerX + 8;
+            const starY = centerY + 2;
+            const outerRadius = 6;
+            const innerRadius = 3;
+            for (let i = 0; i < 10; i++) {
+                const angle = (Math.PI / 5) * i - Math.PI / 2;
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const px = starX + Math.cos(angle) * radius;
+                const py = starY + Math.sin(angle) * radius;
+                if (i === 0) {
+                    ctx.moveTo(px, py);
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw legs (white)
+            ctx.fillStyle = '#FFFFFF';
+            // Front left leg (slightly raised for dynamic pose)
+            ctx.beginPath();
+            ctx.ellipse(centerX - 18, centerY + 18, 5, 10, 0.4, 0, Math.PI * 2);
+            ctx.fill();
+            // Front right leg
+            ctx.beginPath();
+            ctx.ellipse(centerX - 2, centerY + 24, 5, 12, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            // Back left leg
+            ctx.beginPath();
+            ctx.ellipse(centerX + 8, centerY + 24, 5, 12, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            // Back right leg
+            ctx.beginPath();
+            ctx.ellipse(centerX + 22, centerY + 22, 5, 12, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw deep purple hooves (all four)
+            ctx.fillStyle = '#800080'; // Deep purple
+            ctx.beginPath();
+            ctx.ellipse(centerX - 18, centerY + 28, 5, 3, 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.ellipse(centerX - 2, centerY + 36, 5, 3, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.ellipse(centerX + 8, centerY + 36, 5, 3, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(centerX + 22, centerY + 34, 5, 3, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw eye (dark oval with white highlight)
+            ctx.fillStyle = '#000000'; // Dark
+            ctx.beginPath();
+            ctx.ellipse(centerX - 18, centerY - 10, 3, 4, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            // White highlight
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(centerX - 17, centerY - 11, 1, 0, Math.PI * 2);
+            ctx.fill();
             
             ctx.restore();
         }

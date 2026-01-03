@@ -164,6 +164,7 @@
             align-items: center;
             justify-content: center;
             transition: transform 0.3s ease;
+            position: relative;
         }
 
         .game-card:hover {
@@ -186,6 +187,30 @@
             line-height: 1.6;
             font-size: 1.1rem;
             max-width: 500px;
+        }
+
+        .new-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
         }
 
         /* Carousel Navigation */
@@ -391,6 +416,7 @@
             <button class="carousel-nav prev" id="prevBtn">‹</button>
             <div class="carousel-wrapper" id="carouselWrapper">
                 <a href="crossyroads/index.html" class="game-card">
+                    <span class="new-badge">NEW</span>
                     <div class="game-emoji">🐦🛣️</div>
                     <h2>Crossy Roads</h2>
                     <p>Navigate through traffic and cross the road safely in this fun arcade game!</p>
