@@ -276,27 +276,50 @@ function setupControls() {
         keys[e.key.toLowerCase()] = false;
     });
 
-    // Mobile touch controls
+    // Mobile touch controls - attach to both canvas and body for better compatibility
     const canvas = document.getElementById('gameCanvas');
-    
-    canvas.addEventListener('touchstart', (e) => {
+    const handleTouchStart = (e) => {
+        // Only handle game controls when playing
         if (gameState !== 'playing') return;
+        
+        // Check if touch is on a UI element (button, etc)
+        const target = e.target;
+        if (target.tagName === 'BUTTON' || target.closest('button') || target.closest('.screen.active')) {
+            return; // Let UI handle it
+        }
+        
         e.preventDefault();
-        const touch = e.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-        touchStartTime = Date.now();
-        touchMoved = false;
-    }, { passive: false });
-
-    canvas.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) {
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            touchStartTime = Date.now();
+            touchMoved = false;
+        }
+    };
+    
+    const handleTouchMove = (e) => {
         if (gameState !== 'playing') return;
+        
+        const target = e.target;
+        if (target.tagName === 'BUTTON' || target.closest('button') || target.closest('.screen.active')) {
+            return;
+        }
+        
         e.preventDefault();
         touchMoved = true;
-    }, { passive: false });
-
-    canvas.addEventListener('touchend', (e) => {
+    };
+    
+    const handleTouchEnd = (e) => {
+        // Only handle game controls when playing
         if (gameState !== 'playing') return;
+        
+        // Check if touch is on a UI element
+        const target = e.target;
+        if (target.tagName === 'BUTTON' || target.closest('button') || target.closest('.screen.active')) {
+            return; // Let UI handle it
+        }
+        
         e.preventDefault();
         
         if (!touchMoved && e.changedTouches.length > 0) {
@@ -305,18 +328,18 @@ function setupControls() {
             if (touchDuration < 300) {
                 jump();
             }
-        } else if (e.changedTouches.length > 0) {
+        } else if (e.changedTouches.length > 0 && touchMoved) {
             // Swipe
             const touch = e.changedTouches[0];
             const deltaX = touch.clientX - touchStartX;
             const deltaY = touch.clientY - touchStartY;
             const deltaTime = Date.now() - touchStartTime;
             
-            // Minimum swipe distance
-            const minSwipeDistance = 30;
-            const minSwipeSpeed = 0.3; // pixels per ms
+            // Minimum swipe distance (reduced for mobile)
+            const minSwipeDistance = 20;
+            const minSwipeSpeed = 0.2; // pixels per ms (reduced threshold)
             
-            if (deltaTime > 0) {
+            if (deltaTime > 0 && deltaTime < 500) { // Max swipe time
                 const speedX = Math.abs(deltaX) / deltaTime;
                 const speedY = Math.abs(deltaY) / deltaTime;
                 
@@ -335,7 +358,17 @@ function setupControls() {
                 }
             }
         }
-    }, { passive: false });
+    };
+    
+    // Attach to canvas
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    
+    // Also attach to body as fallback (helps with some mobile browsers)
+    document.body.addEventListener('touchstart', handleTouchStart, { passive: false });
+    document.body.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.body.addEventListener('touchend', handleTouchEnd, { passive: false });
 }
 
 // Movement Functions
