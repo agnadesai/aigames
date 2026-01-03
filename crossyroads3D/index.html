@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Crossy Roads 3D</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1a1a1a;
+            touch-action: none;
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            pointer-events: none;
+        }
+
+        .screen.active {
+            display: flex;
+            pointer-events: all;
+        }
+
+        .title {
+            font-size: clamp(2rem, 8vw, 4rem);
+            font-weight: bold;
+            margin-bottom: 2rem;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .button {
+            padding: 1rem 2rem;
+            font-size: clamp(1rem, 4vw, 1.5rem);
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0.5rem;
+            min-width: 200px;
+            min-height: 60px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s, background 0.2s;
+            touch-action: manipulation;
+        }
+
+        .button:active {
+            transform: scale(0.95);
+        }
+
+        .button:hover {
+            background: #45a049;
+        }
+
+        .color-selector {
+            display: flex;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .color-option {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 4px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .color-option.selected {
+            border-color: white;
+            transform: scale(1.1);
+        }
+
+        .score {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            z-index: 50;
+        }
+
+        .game-over-text {
+            font-size: clamp(2rem, 8vw, 4rem);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .final-score {
+            font-size: clamp(1.5rem, 5vw, 2rem);
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .button {
+                min-width: 80%;
+                padding: 1.5rem;
+                font-size: 1.2rem;
+            }
+
+            .color-option {
+                width: 50px;
+                height: 50px;
+            }
+        }
+
+        /* Disable context menu */
+        body {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="ui-overlay">
+        <!-- Start Screen -->
+        <div id="startScreen" class="screen active">
+            <h1 class="title">🐦 Crossy Roads 3D</h1>
+            <div class="color-selector" id="colorSelector"></div>
+            <button class="button" id="startButton">Play</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="screen">
+            <h2 class="game-over-text">Game Over!</h2>
+            <div class="final-score" id="finalScore">Score: 0</div>
+            <button class="button" id="restartButton">Play Again</button>
+        </div>
+    </div>
+
+    <div class="score" id="scoreDisplay">0</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
