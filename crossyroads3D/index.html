@@ -142,6 +142,16 @@
             opacity: 0.9;
         }
 
+        .instructions {
+            font-size: clamp(0.9rem, 3vw, 1.2rem);
+            margin: 1rem 0;
+            text-align: center;
+            opacity: 0.9;
+            color: #cccccc;
+            max-width: 90%;
+            line-height: 1.5;
+        }
+
         @media (max-width: 768px) {
             .button {
                 min-width: 80%;
@@ -170,6 +180,8 @@
         <div id="startScreen" class="screen active">
             <h1 class="title">🐦 Crossy Roads 3D</h1>
             <div class="color-selector" id="colorSelector"></div>
+            <button class="button" id="multiplayerToggle" style="margin: 0.5rem; background: #2196F3;">2 Players: OFF</button>
+            <div class="instructions" id="instructionsText" style="display: none;">Desktop: Arrow keys + W key | Mobile: Split screen (left=P1, right=P2)</div>
             <button class="button" id="startButton">Play</button>
         </div>
 
@@ -182,6 +194,7 @@
     </div>
 
     <div class="score" id="scoreDisplay">0</div>
+    <div class="score" id="scoreDisplay2" style="top: 60px; display: none;">P2: 0</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="main.js"></script>
