@@ -152,6 +152,49 @@
             line-height: 1.5;
         }
 
+        .split-screen-indicator {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.5);
+            z-index: 40;
+            display: none;
+            pointer-events: none;
+            box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+        }
+
+        .split-screen-indicator.active {
+            display: block;
+        }
+
+        .player-zone-label {
+            position: absolute;
+            top: 100px;
+            font-size: clamp(1rem, 4vw, 1.5rem);
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.6);
+            z-index: 40;
+            pointer-events: none;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            display: none;
+        }
+
+        .player-zone-label.active {
+            display: block;
+        }
+
+        .player-zone-label.p1 {
+            left: 25%;
+            transform: translateX(-50%);
+        }
+
+        .player-zone-label.p2 {
+            right: 25%;
+            transform: translateX(50%);
+        }
+
         @media (max-width: 768px) {
             .button {
                 min-width: 80%;
@@ -195,6 +238,11 @@
 
     <div class="score" id="scoreDisplay">0</div>
     <div class="score" id="scoreDisplay2" style="top: 60px; display: none;">P2: 0</div>
+    
+    <!-- Split screen indicator for mobile multiplayer -->
+    <div class="split-screen-indicator" id="splitScreenIndicator"></div>
+    <div class="player-zone-label p1" id="playerZoneLabel1">P1</div>
+    <div class="player-zone-label p2" id="playerZoneLabel2">P2</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="main.js"></script>

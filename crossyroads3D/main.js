@@ -140,7 +140,10 @@ function init() {
     
     // Handle orientation change
     window.addEventListener('orientationchange', () => {
-        setTimeout(onWindowResize, 100);
+        setTimeout(() => {
+            onWindowResize();
+            updateSplitScreenIndicator();
+        }, 100);
     });
 
     // Start game loop
@@ -228,6 +231,25 @@ function createPlayer(isPlayer2 = false) {
     playerGroup.userData.boundingBox = boxHelper;
 }
 
+// Update split-screen indicator visibility
+function updateSplitScreenIndicator() {
+    const indicator = document.getElementById('splitScreenIndicator');
+    const label1 = document.getElementById('playerZoneLabel1');
+    const label2 = document.getElementById('playerZoneLabel2');
+    const isMobile = window.innerWidth < 768;
+    const shouldShow = gameState === 'playing' && isMultiplayer && isMobile;
+    
+    if (shouldShow) {
+        indicator.classList.add('active');
+        label1.classList.add('active');
+        label2.classList.add('active');
+    } else {
+        indicator.classList.remove('active');
+        label1.classList.remove('active');
+        label2.classList.remove('active');
+    }
+}
+
 // Initialize UI
 function initUI() {
     // Color selector
@@ -261,6 +283,10 @@ function initUI() {
         // Update score display format
         const currentScore = scoreDisplay.textContent.replace(/^P1: /, '');
         scoreDisplay.textContent = isMultiplayer ? `P1: ${currentScore}` : currentScore;
+        // Update split-screen indicator if game is playing
+        if (gameState === 'playing') {
+            updateSplitScreenIndicator();
+        }
     });
 
     // Start button
@@ -1474,6 +1500,9 @@ function startGame() {
         }
     }
     
+    // Update split-screen indicator
+    updateSplitScreenIndicator();
+    
     camera.position.set(0, 8, PLAYER_START_Z + 12);
     camera.lookAt(0, 0, PLAYER_START_Z - 2);
 }
@@ -1541,6 +1570,8 @@ function restartGame() {
     gameState = 'menu';
     document.getElementById('gameOverScreen').classList.remove('active');
     document.getElementById('startScreen').classList.add('active');
+    // Hide split-screen indicator
+    updateSplitScreenIndicator();
 }
 
 function gameOver() {
@@ -1551,6 +1582,8 @@ function gameOver() {
         document.getElementById('finalScore').textContent = `Score: ${score}`;
     }
     document.getElementById('gameOverScreen').classList.add('active');
+    // Hide split-screen indicator
+    updateSplitScreenIndicator();
 }
 
 // Window Resize Handler
@@ -1558,6 +1591,8 @@ function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    // Update split-screen indicator visibility on resize
+    updateSplitScreenIndicator();
 }
 
 // Animation Loop
